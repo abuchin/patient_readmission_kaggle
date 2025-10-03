@@ -259,6 +259,14 @@ def main():
         reduction_factor=2,
     )
 
+    # add run config
+    run_config = air.RunConfig(
+        name="xgb_hpo",
+        storage_path=os.path.abspath(args.ray_dir),
+        verbose=1,
+    )
+
+
     # Use Optuna if available; otherwise Ray's default sampler
     try:
         search_alg = OptunaSearch(metric="val_auc", mode="max")
@@ -282,12 +290,8 @@ def main():
             num_samples=args.num_samples,
             search_alg=search_alg,
         ),
+        run_config=run_config,  # <- pass the updated RunConfig
         param_space=search_space,
-        run_config = air.RunConfig(
-            name="xgb_hpo",
-            storage_path=args.ray_dir,  # <-- use this instead
-            verbose=1,
-        ),
     )
 
     results = tuner.fit()
