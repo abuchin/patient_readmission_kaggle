@@ -28,6 +28,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score, accuracy_score, f1_score, average_precision_score
 
+from ray.tune.schedulers import ASHAScheduler
+from ray.tune import RunConfig
+
 from xgboost import XGBClassifier
 
 # ---- MLflow ----
@@ -203,6 +206,7 @@ def fit_best_and_log(X_train, y_train_num, X_test, y_test_num, preprocessor, bes
 
 
 def main():
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=str, required=True,
                         help="Path to diabetic_data.csv")
@@ -239,6 +243,7 @@ def main():
     # ---- Ray Tune setup ----
     ray.init(ignore_reinit_error=True)
 
+
     # Search space
     search_space = {
         "n_estimators": tune.randint(200, 900),             # 200..899
@@ -251,24 +256,19 @@ def main():
         "reg_lambda": tune.loguniform(1e-2, 1e1),
     }
 
-    scheduler = ASHAScheduler(
-        metric="val_auc",
-        mode="max",
-        grace_period=1,
-        max_t=1,  # we evaluate once per trial (CV), so keep at 1
-        reduction_factor=2,
-    )
+    # initialize the scheduler
+    scheduler = ASHAScheduler(grace_period=1, max_t=1, reduction_factor=2)
 
     # add run config
-    run_config = air.RunConfig(
+    run_config = RunConfig(
         name="xgb_hpo",
         storage_path=os.path.abspath(args.ray_dir),
         verbose=1,
     )
 
-
     # Use Optuna if available; otherwise Ray's default sampler
     try:
+        from ray.tune.search.optuna import OptunaSearch
         search_alg = OptunaSearch(metric="val_auc", mode="max")
     except Exception:
         search_alg = None
@@ -290,7 +290,7 @@ def main():
             num_samples=args.num_samples,
             search_alg=search_alg,
         ),
-        run_config=run_config,  # <- pass the updated RunConfig
+        run_config=run_config,
         param_space=search_space,
     )
 
