@@ -30,6 +30,7 @@ from sklearn.metrics import roc_auc_score, accuracy_score, f1_score, average_pre
 
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune import RunConfig
+from ray.air import session
 
 from xgboost import XGBClassifier
 
@@ -138,7 +139,7 @@ def trainable(config, X_train: pd.DataFrame, y_train_num: np.ndarray, preprocess
         mlflow.log_metrics(metrics)
 
         # Report to Ray Tune (optimize val_auc)
-        tune.report(**metrics)
+        session.report(metrics=metrics)
 
 
 def fit_best_and_log(X_train, y_train_num, X_test, y_test_num, preprocessor, best_config):
