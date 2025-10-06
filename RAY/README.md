@@ -141,9 +141,15 @@ Fits the best model on full training data and:
 ### MLflow UI
 Launch the MLflow tracking UI to monitor experiments:
 
+On the instance run this command:
+
 ```bash
 mlflow ui --backend-store-uri file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns --host 127.0.0.1 --port 5000
 ```
+
+Connect to ML Flow from your terminal
+```bash
+ssh -i /path/to/your/permission_file.pem  -N -L 5001:127.0.0.1:5000 ec2-user@EC2_instance_public_DNS```
 
 ### Ray Dashboard
 Monitor Ray cluster and trial progress:
