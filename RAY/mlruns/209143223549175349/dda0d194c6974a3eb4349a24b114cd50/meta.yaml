@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/dda0d194c6974a3eb4349a24b114cd50/artifacts
+end_time: 1759532390000
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: dda0d194c6974a3eb4349a24b114cd50
+run_name: fortunate-tern-439
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759531057363
+status: 4
+tags: []
+user_id: ec2-user

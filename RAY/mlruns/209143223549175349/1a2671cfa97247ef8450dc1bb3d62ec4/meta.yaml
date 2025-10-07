@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/1a2671cfa97247ef8450dc1bb3d62ec4/artifacts
+end_time: 1759545231047
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: 1a2671cfa97247ef8450dc1bb3d62ec4
+run_name: learned-shrike-560
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759545092424
+status: 4
+tags: []
+user_id: ec2-user

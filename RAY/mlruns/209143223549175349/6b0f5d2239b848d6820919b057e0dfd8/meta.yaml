@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/6b0f5d2239b848d6820919b057e0dfd8/artifacts
+end_time: 1759527448261
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: 6b0f5d2239b848d6820919b057e0dfd8
+run_name: sassy-wren-447
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759525726564
+status: 4
+tags: []
+user_id: ec2-user

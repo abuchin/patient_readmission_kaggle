@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/dd0a1f5806f146998dd5bfa9b3a13bb8/artifacts
+end_time: 1759528354543
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: dd0a1f5806f146998dd5bfa9b3a13bb8
+run_name: stately-finch-641
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759527459415
+status: 4
+tags: []
+user_id: ec2-user

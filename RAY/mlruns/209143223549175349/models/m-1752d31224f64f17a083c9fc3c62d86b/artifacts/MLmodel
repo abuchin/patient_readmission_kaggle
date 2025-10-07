@@ -1,0 +1,22 @@
+artifact_path: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/models/m-1752d31224f64f17a083c9fc3c62d86b/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.5
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.7.2
+mlflow_version: 3.4.0
+model_id: m-1752d31224f64f17a083c9fc3c62d86b
+model_size_bytes: 2371632
+model_uuid: m-1752d31224f64f17a083c9fc3c62d86b
+prompts: null
+run_id: 424024ad1f8941e7816cdbae5a601dcd
+utc_time_created: '2025-10-04 02:34:35.566483'

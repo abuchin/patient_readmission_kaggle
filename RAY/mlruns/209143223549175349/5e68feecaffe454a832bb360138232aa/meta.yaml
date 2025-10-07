@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/5e68feecaffe454a832bb360138232aa/artifacts
+end_time: 1759545084231
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: 5e68feecaffe454a832bb360138232aa
+run_name: painted-newt-312
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759544898449
+status: 4
+tags: []
+user_id: ec2-user

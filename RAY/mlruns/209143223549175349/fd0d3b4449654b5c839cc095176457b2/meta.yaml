@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/fd0d3b4449654b5c839cc095176457b2/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: fd0d3b4449654b5c839cc095176457b2
+run_name: intelligent-carp-470
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759533457290
+status: 1
+tags: []
+user_id: ec2-user

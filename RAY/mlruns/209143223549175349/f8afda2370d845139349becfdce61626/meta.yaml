@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/f8afda2370d845139349becfdce61626/artifacts
+end_time: 1759524929932
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: f8afda2370d845139349becfdce61626
+run_name: skillful-bat-67
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759523958756
+status: 4
+tags: []
+user_id: ec2-user

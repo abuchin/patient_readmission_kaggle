@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/c12b9923cc2a4f2488034ff1b200f121/artifacts
+end_time: 1759523464206
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: c12b9923cc2a4f2488034ff1b200f121
+run_name: serious-sloth-590
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759522917431
+status: 4
+tags: []
+user_id: ec2-user

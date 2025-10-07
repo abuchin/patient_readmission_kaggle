@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/ccb4313250d34a8b846a8ac1c66a07fb/artifacts
+end_time: 1759525715232
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: ccb4313250d34a8b846a8ac1c66a07fb
+run_name: debonair-fawn-714
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1759524938291
+status: 4
+tags: []
+user_id: ec2-user

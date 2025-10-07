@@ -1,0 +1,2 @@
+val_auc,val_ap,val_acc,val_f1,timestamp,checkpoint_dir_name,done,training_iteration,trial_id,date,time_this_iter_s,time_total_s,pid,hostname,node_ip,time_since_restore,iterations_since_restore
+0.729767192137156,0.6868214811582803,0.6666831138221336,0.6487088433500054,1759544889,,True,1,57bc5_00002,2025-10-04_02-28-09,278.6377696990967,278.6377696990967,177094,ip-172-31-45-141.us-west-2.compute.internal,172.31.45.141,278.6377696990967,1

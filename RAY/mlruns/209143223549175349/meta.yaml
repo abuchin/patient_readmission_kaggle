@@ -1,0 +1,6 @@
+artifact_location: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349
+creation_time: 1759521158400
+experiment_id: '209143223549175349'
+last_update_time: 1759521158400
+lifecycle_stage: active
+name: xgb_diabetic_readmission_hpo
