@@ -25,6 +25,9 @@ The project uses a diabetic patient dataset (`diabetic_data.csv`) that contains 
 - **Diagnostic information**: Number of diagnoses, inpatient visits
 - **Target variable**: Readmission status
 
+The dataset could be found on kaggle. The file name diabetic_data.csv is what we want and would reuse for the whole project.
+https://www.kaggle.com/datasets/dubradave/hospital-readmissions
+
 ### Data Characteristics
 
 Based on the exploratory data analysis:
