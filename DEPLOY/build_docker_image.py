@@ -3,7 +3,6 @@
 
 import argparse
 import os
-import shutil
 import subprocess
 import sys
 
@@ -14,12 +13,11 @@ DEFAULT_MLFLOW_URI = "file:/home/ec2-user/projects/patient_selection/code/RAY/ml
 DEFAULT_EXP_NAME = "xgb_diabetic_readmission_hpo"
 DEFAULT_OUT_DIR = "./model"
 DEFAULT_IMAGE_TAG = "diabetic-xgb:serve"
-DEFAULT_REQS_SRC = "/home/ec2-user/projects/patient_selection/code/requirements.txt"
-DEFAULT_REQS_DST = "./requirements.txt"
 DEFAULT_SERVE_PORT = 5001  # 5000 is in use
 
 DOCKERFILE_TEMPLATE = """# Auto-generated Dockerfile
-FROM python:3.10-slim
+# Use a Python version compatible with numpy>=2.3 (requires >=3.11)
+FROM python:3.11-slim
 
 # xgboost runtime dependency
 RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \\
@@ -27,19 +25,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \\
 
 WORKDIR /app
 
-# Copy exported MLflow model dir and your requirements
+# Copy exported MLflow model dir
 COPY model /app/model
-COPY requirements.txt /app/requirements.txt
 
-# Install dependencies from your requirements
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# Install deps from the model's own requirements captured by MLflow
+RUN python -m pip install --upgrade pip setuptools wheel \\
+ && if [ -f /app/model/requirements.txt ]; then \\
+      pip install --no-cache-dir -r /app/model/requirements.txt; \\
+    else \\
+      pip install --no-cache-dir mlflow xgboost scikit-learn pandas numpy scipy; \\
+    fi
 
 # Avoid noisy over-threading in containers
 ENV OMP_NUM_THREADS=1 \\
     MKL_NUM_THREADS=1
 
 EXPOSE {port}
-CMD ["mlflow", "models", "serve", "-m", "/app/model", "--host", "0.0.0.0", "--port", "{port}"]
+CMD ["mlflow", "models", "serve", "-m", "/app/model", "--env-manager", "local", "--host", "0.0.0.0", "--port", "{port}"]
 """
 
 def sh(cmd, cwd=None):
@@ -58,10 +60,6 @@ def main():
                     help="Where to export the MLflow model directory (Docker build context expects ./model)")
     ap.add_argument("--image-tag", default=DEFAULT_IMAGE_TAG,
                     help="Docker image tag to build")
-    ap.add_argument("--requirements-path", default=DEFAULT_REQS_SRC,
-                    help="Path to your requirements.txt to install in the image")
-    ap.add_argument("--requirements-dst", default=DEFAULT_REQS_DST,
-                    help="Destination path (inside build context) for requirements.txt")
     ap.add_argument("--serve-port", type=int, default=DEFAULT_SERVE_PORT,
                     help="Container port for mlflow models serve (default: 5001)")
     ap.add_argument("--no-build", action="store_true",
@@ -92,26 +90,19 @@ def main():
     model_uri = f"runs:/{run_id}/model"
     print(f"Using model: {model_uri}")
 
-    # 3) Export model locally
+    # 3) Export model locally (MLflow writes model/requirements.txt & python_env.yaml)
     os.makedirs(args.out_dir, exist_ok=True)
     ml_model = mlflow.sklearn.load_model(model_uri)
     mlflow.sklearn.save_model(sk_model=ml_model, path=args.out_dir)
     print(f"Exported model to: {os.path.abspath(args.out_dir)}")
 
-    # 4) Copy requirements into build context
-    if not os.path.isfile(args.requirements_path):
-        print(f"requirements.txt not found at: {args.requirements_path}")
-        sys.exit(1)
-    shutil.copyfile(args.requirements_path, args.requirements_dst)
-    print(f"Copied requirements -> {os.path.abspath(args.requirements_dst)}")
-
-    # 5) Write Dockerfile with chosen port
+    # 4) Write Dockerfile with chosen port
     dockerfile_path = os.path.join(os.getcwd(), "Dockerfile")
     with open(dockerfile_path, "w") as f:
         f.write(DOCKERFILE_TEMPLATE.format(port=args.serve_port))
     print(f"Wrote Dockerfile -> {dockerfile_path}")
 
-    # 6) Build image (optional)
+    # 5) Build image (optional)
     if not args.no_build:
         sh(f"docker build -t {args.image_tag} .")
         print(f"\nBuilt image: {args.image_tag}")
