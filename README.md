@@ -10,7 +10,8 @@ This project aims to create a machine learning model that can predict whether a 
 patient_selection/
 ├── code/
 │   ├── EDA/               # Exploratory Data Analysis
-│   │   └── EDA.ipynb      # Interactive analysis notebook
+│   │   ├── EDA.ipynb      # Interactive analysis notebook
+│   │   └── README.md      # EDA documentation
 │   ├── RAY/               # Hyperparameter Optimization
 │   │   ├── ray_tune_xgboost.py  # Ray Tune HPO script
 │   │   ├── mlruns/        # MLflow tracking store
@@ -22,6 +23,15 @@ patient_selection/
 │   │   ├── Dockerfile     # Container definition
 │   │   ├── model/         # Exported MLflow model
 │   │   └── README.md      # Deployment documentation
+│   ├── MONITOR/           # Model Monitoring & Drift Detection
+│   │   ├── scripts/       # Monitoring execution scripts
+│   │   │   └── run_monitor.py     # Main monitoring script
+│   │   ├── app/           # Logging utilities
+│   │   │   ├── log_utils.py       # Prediction logging
+│   │   │   └── logged_model.py    # MLflow wrapper with logging
+│   │   ├── configs/       # Configuration files
+│   │   │   └── monitoring.yaml    # Monitoring parameters
+│   │   └── reports/       # Generated drift reports
 │   ├── requirements.txt   # Python dependencies
 │   └── README.md          # This file
 ├── data/
@@ -301,6 +311,156 @@ curl -X POST http://localhost:5001/invocations \
 
 ---
 
+### 4. MONITOR - Model Monitoring & Drift Detection
+
+**Location**: `code/MONITOR/`
+
+**Purpose**: Continuously monitor production model performance and detect data drift to ensure model reliability over time.
+
+**Key Components**:
+
+#### Prediction Logging (`app/log_utils.py` & `app/logged_model.py`)
+- **LoggedModel Wrapper**: MLflow PythonModel wrapper that automatically logs all predictions
+- **Prediction Capture**: Records input features, predictions, and timestamps
+- **Daily Aggregation**: Logs saved as daily Parquet files (`preds_YYYY-MM-DD.parquet`)
+- **Metadata Tracking**: Captures request metadata alongside predictions
+
+#### Monitoring Script (`scripts/run_monitor.py`)
+- **Framework**: Evidently AI for drift detection and model monitoring
+- **Reference Data**: Compares production data against training baseline
+- **Automated Reports**: Generates HTML and JSON reports for analysis
+- **MLflow Integration**: Logs all reports and metrics to MLflow tracking
+
+#### Drift Detection
+The monitoring system tracks multiple types of drift:
+
+**Data Drift**:
+- Detects changes in feature distributions using statistical tests
+- Monitors share of drifted features (threshold: 30% default)
+- Dataset-level p-value tracking (threshold: 0.05 default)
+- Feature-by-feature drift analysis
+
+**Target Drift** (when labels available):
+- Monitors changes in prediction distribution
+- Compares actual vs predicted outcomes
+- Tracks label distribution shifts
+
+**Model Performance** (when labels available):
+- Classification metrics: precision, recall, F1-score, accuracy
+- Confusion matrix analysis
+- ROC-AUC and average precision tracking
+- Performance degradation alerts
+
+#### Configuration (`configs/monitoring.yaml`)
+```yaml
+mlflow_tracking_uri: "file://.../RAY/mlruns"
+mlflow_experiment: "MediWatch-Monitoring"
+
+paths:
+  reference: "/path/to/X_train.csv"     # Training baseline
+  logs_dir: "code/DEPLOY/logs"          # Production predictions
+  reports_out: "code/MONITOR/reports"   # Output reports
+
+drift_thresholds:
+  share_of_drifted_columns: 0.30        # Alert if 30%+ features drift
+  p_value: 0.05                         # Dataset-level significance
+```
+
+#### Monitoring Workflow
+
+**Step 1: Log Predictions in Production**
+```python
+from app.logged_model import LoggedModel
+import mlflow
+
+# Wrap your model with logging
+logged_model = LoggedModel()
+logged_model.load_context(context)
+
+# Predictions are automatically logged
+predictions = logged_model.predict(context, input_data)
+```
+
+**Step 2: Run Drift Detection**
+```bash
+cd code/MONITOR/
+python scripts/run_monitor.py
+```
+
+**Step 3: Review Reports**
+- HTML reports generated in `reports/` directory
+- JSON metrics for programmatic access
+- MLflow artifacts for historical tracking
+
+#### Drift Alert System
+The monitoring script returns exit codes based on drift detection:
+- **Exit 0**: No drift detected (normal operation)
+- **Exit 2**: Drift alert triggered (requires attention)
+
+Alert triggers:
+1. **Feature Drift**: ≥30% of features show significant drift
+2. **Dataset Drift**: Overall p-value < 0.05
+3. **Either condition** triggers retraining recommendation
+
+#### Generated Reports
+
+**Full Report** (`evidently_report_*.html`):
+- Comprehensive drift analysis
+- Feature-by-feature comparisons
+- Distribution visualizations
+- Statistical test results
+
+**Summary Report** (`evidently_summary_*.html`):
+- High-level drift metrics
+- Dataset-level statistics
+- Quick health check status
+
+**Drift Alert** (`drift_alert_*.json`):
+```json
+{
+  "alert": true/false,
+  "share": 0.35,
+  "p_value": 0.023,
+  "window": "2025-01-15"
+}
+```
+
+#### Integration Points
+
+**With DEPLOY**:
+- Reads prediction logs from deployed model
+- Monitors production inference data
+- Works with Docker containerized models
+
+**With RAY**:
+- Uses MLflow tracking from HPO experiments
+- Compares against training reference data
+- Triggers retraining when drift detected
+
+**With MLflow**:
+- Logs all monitoring reports as artifacts
+- Tracks drift metrics over time
+- Maintains monitoring experiment history
+
+#### Use Cases
+
+1. **Continuous Monitoring**: Schedule regular drift checks (daily/weekly)
+2. **Alert System**: Integrate with notification services (email, Slack)
+3. **Retraining Trigger**: Automatically initiate model retraining on drift
+4. **Model Governance**: Maintain audit trail of model performance
+5. **A/B Testing**: Compare model versions in production
+
+**Tools Used**: evidently, pandas, mlflow, pyyaml
+
+**Best Practices**:
+- Run monitoring at regular intervals (e.g., daily via cron/Airflow)
+- Set appropriate drift thresholds based on domain knowledge
+- Keep reference data representative of training distribution
+- Archive reports for compliance and auditing
+- Integrate alerts with incident management systems
+
+---
+
 ## Pipeline Overview
 
 The complete ML pipeline follows these stages:
@@ -316,6 +476,10 @@ The complete ML pipeline follows these stages:
 3. DEPLOY (Production)
    └─> Package model in Docker container
        └─> Serve via REST API for predictions
+       
+4. MONITOR (Observability)
+   └─> Track predictions, detect drift, monitor performance
+       └─> Alert on drift → Trigger retraining
 ```
 
 **Data Flow**:
@@ -326,16 +490,29 @@ diabetic_data.csv
     → MLflow tracking (best model saved)
     → Docker export (model packaged)
     → REST API (predictions served)
+    → Prediction logging (monitored)
+    → Drift detection (Evidently reports)
+    → [If drift detected] → Retrain model (back to RAY)
+```
+
+**Continuous Feedback Loop**:
+```
+Production Data → MONITOR → Drift Detection
+                               ↓ (if drift)
+                          Retrain Signal
+                               ↓
+                  RAY (HPO) → DEPLOY → Production
 ```
 
 ## Future Work
 
 The project is designed to be extended with:
-- **Airflow Orchestration**: Automated retraining pipeline with scheduling
+- **Airflow Orchestration**: Automated workflow scheduling and pipeline execution
+- **Automated Retraining**: Trigger model retraining automatically when drift is detected
+- **Real-time Dashboard**: Live monitoring dashboard for model performance and drift metrics
 - **HuggingFace Deployment**: Alternative deployment platform for wider accessibility
 - **Web Interface**: LLM-powered chatbot for dataset queries and explanations
-- **Model Monitoring**: Data drift detection and automatic retraining triggers
-- **A/B Testing**: Compare model versions in production
+- **A/B Testing Framework**: Advanced comparison of model versions in production
 - **Feature Store**: Centralized feature engineering and storage
 
 ## Requirements
@@ -368,6 +545,12 @@ The project requires Python 3.11+ and the following libraries:
 - pandas >= 2.3.0
 - numpy >= 2.3.0
 
+#### MONITOR Component
+- evidently >= 0.4.0
+- pandas >= 1.3.0
+- mlflow >= 1.20.0
+- pyyaml >= 5.4
+
 ### Installation
 
 Install all dependencies:
@@ -392,6 +575,9 @@ pip install ray[tune] xgboost scikit-learn mlflow optuna
 
 # For DEPLOY
 pip install mlflow xgboost scikit-learn docker
+
+# For MONITOR
+pip install evidently pandas mlflow pyyaml
 ```
 
 ## Getting Started
@@ -467,6 +653,27 @@ curl -X POST http://localhost:5001/invocations \
      }'
 ```
 
+#### Step 4: Model Monitoring
+
+```bash
+# Navigate to MONITOR directory
+cd ../MONITOR/
+
+# Run drift detection on production logs
+python scripts/run_monitor.py
+
+# View generated reports
+# - reports/evidently_report_*.html (comprehensive analysis)
+# - reports/evidently_summary_*.html (quick overview)
+# - reports/drift_alert_*.json (alert status)
+
+# Check MLflow for monitoring history
+mlflow ui --backend-store-uri file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns \
+    --host 127.0.0.1 --port 5000
+
+# Access monitoring experiment: "MediWatch-Monitoring"
+```
+
 ### Quick Start (Individual Components)
 
 #### Run Only EDA
@@ -486,6 +693,12 @@ python ray_tune_xgboost.py --data /path/to/diabetic_data.csv --num-samples 30
 cd code/DEPLOY/
 python build_docker_image.py
 docker run --rm -p 5001:5001 diabetic-xgb:serve
+```
+
+#### Run Monitoring
+```bash
+cd code/MONITOR/
+python scripts/run_monitor.py
 ```
 
 ## Expected Results & Performance
@@ -512,6 +725,13 @@ docker run --rm -p 5001:5001 diabetic-xgb:serve
 - **Startup Time**: 5-10 seconds
 - **Inference Speed**: <100ms per prediction
 - **API Response Format**: JSON with probability scores
+
+### MONITOR Phase
+- **Drift Detection**: Automatic feature and dataset drift analysis
+- **Report Generation**: ~5-10 seconds per run
+- **Alert Accuracy**: Configurable thresholds (30% feature drift, p<0.05)
+- **Storage**: Daily prediction logs in Parquet format
+- **MLflow Tracking**: All reports logged as artifacts
 
 ## Monitoring & Validation
 
@@ -582,9 +802,17 @@ The main dataset should be located at:
 - **Model not found**: Verify MLflow tracking URI and experiment name
 - **Import errors in container**: Rebuild image, check requirements.txt
 
+#### MONITOR Phase
+- **No prediction logs**: Ensure model is serving and predictions are being made
+- **Evidently import errors**: Install evidently with `pip install evidently`
+- **Reference data not found**: Check path in `configs/monitoring.yaml`
+- **Drift false positives**: Adjust thresholds in configuration file
+- **Report generation fails**: Ensure sufficient data in logs (minimum ~100 samples)
+
 ### Getting Help
 
 1. Check component-specific README files:
+   - [EDA/README.md](EDA/README.md)
    - [RAY/README.md](RAY/README.md)
    - [DEPLOY/README.md](DEPLOY/README.md)
 
@@ -603,6 +831,10 @@ The main dataset should be located at:
    
    # Docker logs
    docker logs <container-id>
+   
+   # Monitoring logs
+   ls -la code/MONITOR/reports/
+   cat code/MONITOR/reports/drift_alert_*.json
    ```
 
 ## Project Milestones
@@ -626,13 +858,20 @@ The main dataset should be located at:
   - [x] REST API endpoints
   - [x] Deployment automation script
 
-- [ ] **Phase 4**: Production Enhancement (Future)
-  - [ ] Airflow orchestration
-  - [ ] Automated retraining pipeline
-  - [ ] Data drift monitoring
-  - [ ] A/B testing framework
+- [x] **Phase 4**: Model Monitoring
+  - [x] Prediction logging system
+  - [x] Drift detection with Evidently
+  - [x] Automated report generation
+  - [x] MLflow monitoring integration
+  - [x] Alert system for drift detection
 
-- [ ] **Phase 5**: User Interface (Future)
+- [ ] **Phase 5**: Production Enhancement (Future)
+  - [ ] Airflow orchestration for automated workflows
+  - [ ] Automated retraining pipeline triggered by drift
+  - [ ] Advanced A/B testing framework
+  - [ ] Real-time monitoring dashboard
+
+- [ ] **Phase 6**: User Interface (Future)
   - [ ] Web application
   - [ ] LLM-powered chatbot
   - [ ] Interactive predictions
@@ -659,11 +898,13 @@ This project is part of a patient readmission prediction system designed for hea
 - **MLflow**: [Documentation](https://mlflow.org/docs/latest/index.html)
 - **XGBoost**: [Documentation](https://xgboost.readthedocs.io/)
 - **Docker**: [Documentation](https://docs.docker.com/)
+- **Evidently AI**: [Documentation](https://docs.evidentlyai.com/)
 
 ## Contact & Support
 
 For questions or issues related to:
-- **Data preprocessing**: Review EDA notebook
+- **Data exploration**: Review EDA notebook and README
 - **Model training**: Check RAY component documentation
 - **Deployment**: Refer to DEPLOY README
+- **Monitoring**: Review drift reports and monitoring configuration
 - **General questions**: Open an issue or contact project maintainers

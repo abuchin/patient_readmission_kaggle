@@ -3,8 +3,8 @@ mlflow_experiment: "MediWatch-Monitoring"
 
 paths:
   reference: "/home/ec2-user/projects/patient_selection/data/X_train.csv"   # <-- your existing file
-  logs_dir: "code/DEPLOY/logs"
-  reports_out: "code/MONITOR/reports"
+  logs_dir: "/home/ec2-user/projects/patient_selection/code/DEPLOY/logs"
+  reports_out: "/home/ec2-user/projects/patient_selection/code/MONITOR/reports"
 
 drift_thresholds:
   share_of_drifted_columns: 0.30    # 30% of features drifted -> alert

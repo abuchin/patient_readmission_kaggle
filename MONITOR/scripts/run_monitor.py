@@ -1,7 +1,29 @@
 import os, json, glob, sys, datetime as dt, yaml, pandas as pd, mlflow
-from evidently.report import Report
-from evidently.metrics import DatasetDriftMetric
-from evidently.presets import DataDriftPreset, TargetDriftPreset, ClassificationPerformancePreset
+
+# --- Evidently compatibility imports (works for 0.7.x and 0.4.x) ---
+try:
+    from evidently import Report
+    from evidently.metrics import DatasetDriftMetric
+    try:
+        from evidently.presets import (
+            DataDriftPreset,
+            TargetDriftPreset,
+            ClassificationPerformancePreset,
+        )
+    except ImportError:
+        from evidently.metric_preset import (
+            DataDriftPreset,
+            TargetDriftPreset,
+            ClassificationPerformancePreset,
+        )
+except ImportError:
+    from evidently.report import Report
+    from evidently.metrics import DatasetDriftMetric
+    from evidently.presets import (
+        DataDriftPreset,
+        TargetDriftPreset,
+        ClassificationPerformancePreset,
+    )
 
 CFG = yaml.safe_load(open("code/MONITOR/configs/monitoring.yaml"))
 REF_PATH   = CFG["paths"]["reference"]
@@ -31,11 +53,23 @@ def latest_window():
 def has_labels(df):
     return "__target__" in df.columns and df["__target__"].notna().any()
 
+def save_html_safe(rep: Report, path: str):
+    try:
+        rep.save_html(path)
+    except Exception:
+        # Fallback: at least persist JSON alongside
+        with open(path.replace(".html", ".json"), "w") as f:
+            json.dump(rep.as_dict(), f)
+
 def main():
     reference = load_table(REF_PATH)
     current   = pd.read_parquet(latest_window())
 
-    tag_suffix = current.get("__timestamp__", pd.Series([dt.date.today().isoformat()])).iloc[0][:10]
+    # robust tag (works whether __timestamp__ exists or not)
+    if "__timestamp__" in current.columns and len(current["__timestamp__"]) > 0:
+        tag_suffix = str(current["__timestamp__"].iloc[0])[:10]
+    else:
+        tag_suffix = dt.date.today().isoformat()
 
     suites = [DataDriftPreset()]
     if has_labels(reference) and has_labels(current):
@@ -55,21 +89,27 @@ def main():
         "sum_html":    f"{OUT_DIR}/evidently_summary_{tag_suffix}_{ts}.html",
         "sum_json":    f"{OUT_DIR}/evidently_summary_{tag_suffix}_{ts}.json",
     }
-    report.save_html(paths["report_html"])
-    open(paths["report_json"], "w").write(json.dumps(report.as_dict()))
-    summary.save_html(paths["sum_html"])
-    open(paths["sum_json"], "w").write(json.dumps(summary.as_dict()))
+
+    # Save artifacts (tolerant to minor API differences)
+    save_html_safe(report,  paths["report_html"])
+    with open(paths["report_json"], "w") as f: json.dump(report.as_dict(), f)
+    save_html_safe(summary, paths["sum_html"])
+    with open(paths["sum_json"], "w") as f: json.dump(summary.as_dict(), f)
 
     with mlflow.start_run(run_name=f"monitoring_{tag_suffix}_{ts}"):
         for p in paths.values(): mlflow.log_artifact(p)
         mlflow.set_tag("monitoring.window", tag_suffix)
 
+    # Parse thresholds (handle small schema differences across versions)
     sm = json.loads(open(paths["sum_json"]).read())
     try:
-        block = next(m for m in sm["metrics"] if m["metric"] == "DatasetDriftMetric")
+        block = next(m for m in sm["metrics"] if m.get("metric") == "DatasetDriftMetric")
         res   = block["result"]
-        share = float(res["share_of_drifted_columns"])
-        pval  = float(res.get("dataset_drift", {}).get("p_value") or res.get("p_value") or 1.0)
+        # prefer exact key, fall back to nested locations if needed
+        share = float(res.get("share_of_drifted_columns") or 0.0)
+        pval  = res.get("dataset_drift", {}).get("p_value")
+        if pval is None: pval = res.get("p_value", 1.0)
+        pval = float(pval)
     except Exception:
         share, pval = 0.0, 1.0
 
@@ -77,7 +117,8 @@ def main():
     print(f"[Drift] share={share:.3f} p={pval:.3g} alert={alert}")
 
     flag = f"{OUT_DIR}/drift_alert_{tag_suffix}_{ts}.json"
-    open(flag, "w").write(json.dumps({"alert": alert, "share": share, "p_value": pval, "window": tag_suffix}))
+    with open(flag, "w") as f:
+        json.dump({"alert": alert, "share": share, "p_value": pval, "window": tag_suffix}, f)
 
     sys.exit(2 if alert else 0)
 
