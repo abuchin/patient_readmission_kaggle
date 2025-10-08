@@ -1,0 +1,11 @@
+mlflow_tracking_uri: "file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns"
+mlflow_experiment: "MediWatch-Monitoring"
+
+paths:
+  reference: "/home/ec2-user/projects/patient_selection/data/X_train.csv"   # <-- your existing file
+  logs_dir: "code/DEPLOY/logs"
+  reports_out: "code/MONITOR/reports"
+
+drift_thresholds:
+  share_of_drifted_columns: 0.30    # 30% of features drifted -> alert
+  p_value: 0.05                     # dataset-level p-value
