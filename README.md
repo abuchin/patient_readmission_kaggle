@@ -610,7 +610,7 @@ The main dataset should be located at:
 - [x] **Phase 1**: Exploratory Data Analysis
   - [x] Data loading and inspection
   - [x] Feature distribution analysis
-  - [x] Baseline Random Forest model
+  - [x] Baseline Random Forest and XGboost models
   - [x] Feature importance analysis
 
 - [x] **Phase 2**: Hyperparameter Optimization
