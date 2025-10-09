@@ -85,6 +85,14 @@ curl -X POST http://localhost:5001/invocations \
      }'
 ```
 
+If you have your input data as a csv, you could use this way to access the model.
+
+```bash
+curl -X POST http://localhost:5001/invocations \
+  -H "Content-Type: text/csv" \
+  --data-binary @/path/to/your/data/diabetic_data.csv
+```
+
 ## Detailed Usage
 
 ### Build Script Options
