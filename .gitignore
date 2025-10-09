@@ -1,0 +1,30 @@
+monitoring/tmp/
+monitoring/out/
+MONITOR/monitoring/tmp/
+MONITOR/monitoring/out/
+
+# === Ray Tune artifacts ===
+ray_exp/
+ray_exp_retrain/
+**/.validate_storage_marker
+**/tuner.pkl
+**/experiment_state-*.json
+**/basic-variant-state-*.json
+**/events.out.tfevents.*
+**/progress.csv
+**/result.json
+**/params.json
+**/params.pkl
+
+# === MLflow local store (if ever created in repo) ===
+RAY/mlruns/
+**/mlruns/
+
+# === Deploy build artifacts (auto-generated) ===
+DEPLOY/model/
+DEPLOY/Dockerfile
+
+# OS/editor cruft
+.DS_Store
+*.swp
+EOF
