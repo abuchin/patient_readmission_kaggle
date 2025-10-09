@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/3341a2e12494444bb3139bc1549e70ae/artifacts
+end_time: 1760048485973
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: 3341a2e12494444bb3139bc1549e70ae
+run_name: languid-crab-293
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1760047915275
+status: 4
+tags: []
+user_id: ec2-user

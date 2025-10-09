@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/25b9eb88837f48c68d34b7bec39baf09/artifacts
+end_time: 1760048598448
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: 25b9eb88837f48c68d34b7bec39baf09
+run_name: best_model_full_train
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1760048561221
+status: 3
+tags: []
+user_id: ec2-user

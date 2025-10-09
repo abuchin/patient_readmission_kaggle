@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/5981a345107249b6a2dda8da9bfae3ce/artifacts
+end_time: 1760047999989
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: 5981a345107249b6a2dda8da9bfae3ce
+run_name: defiant-bass-627
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1760047688382
+status: 4
+tags: []
+user_id: ec2-user

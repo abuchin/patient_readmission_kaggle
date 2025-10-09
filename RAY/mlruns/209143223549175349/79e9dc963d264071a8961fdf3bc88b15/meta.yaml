@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/79e9dc963d264071a8961fdf3bc88b15/artifacts
+end_time: 1760047906870
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: 79e9dc963d264071a8961fdf3bc88b15
+run_name: secretive-bear-27
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1760047734222
+status: 4
+tags: []
+user_id: ec2-user

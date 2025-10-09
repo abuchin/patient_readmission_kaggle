@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/cd3a4af900224b1fa80700decd7da10b/artifacts
+end_time: 1760048560899
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: cd3a4af900224b1fa80700decd7da10b
+run_name: bemused-pig-624
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1760048009274
+status: 4
+tags: []
+user_id: ec2-user

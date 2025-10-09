@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/36d3e2239b4d44d6b308a2ec6b0be015/artifacts
+end_time: 1760047061724
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: 36d3e2239b4d44d6b308a2ec6b0be015
+run_name: amusing-midge-437
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1760046911937
+status: 4
+tags: []
+user_id: ec2-user

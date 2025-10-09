@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/9de9ae83668f4cf9925184a1c040ad3d/artifacts
+end_time: 1760047312330
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: 9de9ae83668f4cf9925184a1c040ad3d
+run_name: fun-robin-546
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1760047070649
+status: 4
+tags: []
+user_id: ec2-user

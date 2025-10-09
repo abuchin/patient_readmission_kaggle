@@ -1,0 +1,10 @@
+artifact_location: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/models/m-4563ca43b852449f969e489bc81c4123/artifacts
+creation_timestamp: 1760048594899
+experiment_id: '209143223549175349'
+last_updated_timestamp: 1760048598442
+model_id: m-4563ca43b852449f969e489bc81c4123
+model_type: null
+name: model
+source_run_id: 25b9eb88837f48c68d34b7bec39baf09
+status: 2
+status_message: null

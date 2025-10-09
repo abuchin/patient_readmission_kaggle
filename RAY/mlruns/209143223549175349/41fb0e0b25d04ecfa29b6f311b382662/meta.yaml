@@ -1,0 +1,14 @@
+artifact_uri: file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns/209143223549175349/41fb0e0b25d04ecfa29b6f311b382662/artifacts
+end_time: 1760047247903
+entry_point_name: ''
+experiment_id: '209143223549175349'
+lifecycle_stage: active
+run_id: 41fb0e0b25d04ecfa29b6f311b382662
+run_name: traveling-rook-145
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1760046911929
+status: 4
+tags: []
+user_id: ec2-user
