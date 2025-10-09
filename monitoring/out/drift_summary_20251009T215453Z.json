@@ -1,0 +1,321 @@
+{
+  "trigger_retrain": true,
+  "share_drifted": 0.0208,
+  "n_features": 48,
+  "n_drifted": 1,
+  "max_feature_psi": 12.905,
+  "any_feature_psi_thresh": 1.0,
+  "critical_hits": [
+    "number_inpatient"
+  ],
+  "critical_psi_thresh": 0.5,
+  "pred_psi": 0.0,
+  "pred_ks_p": 0.0,
+  "pred_gate": true,
+  "feature_psi_thresh": 0.2,
+  "ks_p_thresh": 0.01,
+  "drift_share_thresh": 0.3,
+  "pred_psi_thresh": 0.2,
+  "pred_ks_p_thresh": 1e-09,
+  "details": [
+    {
+      "column": "admission_type_id",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "discharge_disposition_id",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "admission_source_id",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "time_in_hospital",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "num_lab_procedures",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "num_procedures",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "num_medications",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "number_outpatient",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "number_emergency",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "number_inpatient",
+      "type": "numeric",
+      "psi": 12.905,
+      "ks_p": 0.0,
+      "drift": true
+    },
+    {
+      "column": "number_diagnoses",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "race",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "gender",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "age",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "weight",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "payer_code",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "medical_specialty",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "diag_1",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "diag_2",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "diag_3",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "max_glu_serum",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "A1Cresult",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "metformin",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "repaglinide",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "nateglinide",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "chlorpropamide",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "glimepiride",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "acetohexamide",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "glipizide",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "glyburide",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "tolbutamide",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "pioglitazone",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "rosiglitazone",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "acarbose",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "miglitol",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "troglitazone",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "tolazamide",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "examide",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "citoglipton",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "insulin",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "glyburide-metformin",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "glipizide-metformin",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "glimepiride-pioglitazone",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "metformin-rosiglitazone",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "metformin-pioglitazone",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "change",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "diabetesMed",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    },
+    {
+      "column": "readmitted",
+      "type": "categorical",
+      "psi": 0.0,
+      "drift": false
+    }
+  ]
+}
