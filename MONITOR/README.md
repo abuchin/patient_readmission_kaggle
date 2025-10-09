@@ -1,143 +1,87 @@
-# MONITOR - Model Monitoring & Drift Detection
+# MONITOR - Automated Drift Detection & Model Retraining
 
 ## Overview
 
-The MONITOR component provides comprehensive **drift detection** and **automated retraining** capabilities for the diabetic readmission prediction model. It continuously monitors production model performance and data quality, automatically triggering retraining when drift is detected.
+The MONITOR component provides **automated drift detection** and **intelligent retraining orchestration** for the diabetic readmission prediction model. When data drift is detected, it automatically triggers model retraining and optionally rebuilds the Docker deployment image.
 
-This component is the **final stage** in the MLOps pipeline, closing the feedback loop from production back to training.
+This is the **final stage** of the MLOps pipeline, completing the feedback loop from production monitoring back to model development.
 
 ---
 
 ## 📋 Table of Contents
 
-- [Components Overview](#components-overview)
-- [Monitoring Approaches](#monitoring-approaches)
+- [What This Does](#what-this-does)
+- [Architecture](#architecture)
 - [Quick Start](#quick-start)
-- [Detailed Usage](#detailed-usage)
-- [Configuration](#configuration)
-- [Drift Detection Logic](#drift-detection-logic)
-- [Automated Retraining](#automated-retraining)
+- [How It Works](#how-it-works)
+- [Drift Detection Methods](#drift-detection-methods)
+- [Command Line Arguments](#command-line-arguments)
+- [Usage Examples](#usage-examples)
+- [Configuration & Thresholds](#configuration--thresholds)
+- [Output Files](#output-files)
 - [Integration with Pipeline](#integration-with-pipeline)
+- [Advanced Features](#advanced-features)
 - [Troubleshooting](#troubleshooting)
+- [Best Practices](#best-practices)
 
 ---
 
-## Components Overview
+## What This Does
+
+`monitor_and_retrain.py` is a **complete drift monitoring and retraining pipeline** that:
+
+1. ✅ **Scores both baseline and current data** through your deployed model endpoint
+2. ✅ **Computes drift metrics** using statistical tests (PSI, KS test)
+3. ✅ **Detects drift** in both features and predictions
+4. ✅ **Triggers automated retraining** when drift thresholds are exceeded
+5. ✅ **Rebuilds Docker images** after successful retraining (optional)
+6. ✅ **Logs all results** to JSON files for tracking
+
+**Key Innovation**: Unlike traditional monitoring that only alerts, this system **automatically fixes the problem** by retraining the model on fresh data.
+
+---
+
+## Architecture
+
+### Folder Structure
 
 ```
 MONITOR/
-├── monitor_and_retrain.py      # ⭐ Main: Drift detection + auto-retraining (337 lines)
+├── monitor_and_retrain.py    # Main script (350 lines)
 ├── monitoring/
-│   ├── out/                    # Drift detection outputs (JSON summaries)
-│   └── tmp/                    # Temporary scoring files
-└── reports/                    # Evidently HTML/JSON reports
+│   ├── out/                  # Drift detection results (JSON)
+│   │   └── drift_summary_YYYYMMDDTHHMMSSZ.json
+│   └── tmp/                  # Temporary files for scoring
+│       ├── ref.csv           # Baseline data with predictions
+│       └── cur.csv           # Current data with predictions
+└── README.md                 # This file
 ```
 
-### Component Descriptions
+### Data Flow
 
-| Component | Purpose | Input | Output |
-|-----------|---------|-------|--------|
-| **monitor_and_retrain.py** | End-to-end drift detection & retraining orchestration | Baseline CSV, Current CSV, Endpoint | Drift report, Retrained model |
-| **run_monitor.py** | Evidently-based monitoring with presets | Reference data, Production logs | HTML/JSON reports, MLflow artifacts |
-| **run_monitor_simple.py** | Statistical tests (KS, Chi², PSI) | Reference data, Production logs | CSV table, JSON summary |
-| **logged_model.py** | Prediction logging wrapper | Model predictions | Parquet logs by date |
-| **log_utils.py** | Utilities for appending predictions | Features + predictions | Daily Parquet files |
-
----
-
-## Monitoring Approaches
-
-The MONITOR component offers **three complementary approaches** to drift detection:
-
-### 1. **Full Monitoring with Evidently** (`run_monitor.py`)
-
-**Best for**: Comprehensive analysis with visualizations
-
-**Features**:
-- ✅ Data drift detection (distribution shifts)
-- ✅ Target drift detection (label distribution changes)
-- ✅ Model performance monitoring (when labels available)
-- ✅ Interactive HTML reports with plots
-- ✅ MLflow integration for historical tracking
-
-**Use when**: You want detailed visual reports and comprehensive drift analysis
-
-**Thresholds**:
-- Share of drifted columns: 30% (configurable in `monitoring.yaml`)
-- Dataset-level p-value: 0.05
-
-### 2. **Simple Statistical Monitoring** (`run_monitor_simple.py`)
-
-**Best for**: Lightweight, dependency-light monitoring
-
-**Features**:
-- ✅ KS test for numeric features (distribution comparison)
-- ✅ Chi-squared test for categorical features
-- ✅ PSI (Population Stability Index) for drift magnitude
-- ✅ CSV output for programmatic processing
-- ✅ No heavy dependencies (only scipy)
-
-**Use when**: You need fast, lightweight monitoring or want to customize drift logic
-
-**Thresholds**:
-- PSI threshold: 0.2 (industry standard)
-- p-value threshold: 0.05
-
-### 3. **Automated Drift → Retrain Pipeline** (`monitor_and_retrain.py`) ⭐
-
-**Best for**: Production automation with closed-loop retraining
-
-**Features**:
-- ✅ Real-time prediction scoring via API endpoint
-- ✅ Feature drift detection (PSI + KS tests)
-- ✅ Prediction distribution drift detection
-- ✅ Automatic retraining trigger
-- ✅ Optional Docker image rebuild
-- ✅ Robust prediction parsing (handles various formats)
-
-**Use when**: You want fully automated monitoring → retraining → deployment pipeline
-
-**Thresholds** (all configurable):
-- Feature PSI threshold: 0.2
-- KS p-value threshold: 0.01
-- Share of drifted features: 30%
-- Prediction PSI threshold: 0.2
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Baseline   │────▶│   Score     │────▶│   Detect    │────▶│  Retrain    │
+│   Data      │     │   via API   │     │   Drift     │     │  + Deploy   │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+       │                    │                    │                    │
+    baseline.csv        tmp/ref.csv         PSI + KS test      Ray Tune HPO
+       │                    │                    │                    │
+  Current Data         tmp/cur.csv         drift_summary.json    Docker Image
+```
 
 ---
 
 ## Quick Start
 
-### Option 1: Evidently Monitoring
+### Prerequisites
 
-```bash
-cd code/MONITOR/
-python scripts/run_monitor.py
-```
+1. **Deployed model** serving predictions at an endpoint (e.g., `http://localhost:5001/invocations`)
+2. **Baseline data** (CSV file with features)
+3. **Current/production data** (CSV file with same features)
+4. **Training script** (e.g., `RAY/ray_tune_xgboost.py`)
 
-**Prerequisites**:
-- Configure `configs/monitoring.yaml` with correct paths
-- Production prediction logs in Parquet format
-- Reference data (training baseline)
-
-**Output**:
-- `reports/evidently_report_*.html` - Full interactive report
-- `reports/evidently_summary_*.html` - Quick summary
-- `reports/drift_alert_*.json` - Alert status
-- MLflow experiment: "MediWatch-Monitoring"
-
-### Option 2: Simple Statistical Monitoring
-
-```bash
-cd code/MONITOR/
-python scripts/run_monitor_simple.py
-```
-
-**Output**:
-- `reports/drift_table_*.csv` - Per-feature drift metrics
-- `reports/drift_summary_*.json` - Overall drift summary
-- Exit code 2 if drift detected (for automation)
-
-### Option 3: Automated Drift → Retrain
+### Basic Usage
 
 ```bash
 python code/MONITOR/monitor_and_retrain.py \
@@ -146,56 +90,222 @@ python code/MONITOR/monitor_and_retrain.py \
   --endpoint http://localhost:5001/invocations \
   --retrain-script code/RAY/ray_tune_xgboost.py \
   --tracking-uri file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns \
-  --experiment xgb_diabetic_readmission_hpo \
-  --build-script code/DEPLOY/build_docker_image.py \
-  --image-tag diabetic-xgb:serve
+  --experiment xgb_diabetic_readmission_hpo
 ```
 
-**What happens**:
-1. Loads baseline and current datasets
-2. Scores both through your deployed model endpoint
-3. Computes drift metrics (PSI, KS test)
-4. **If drift detected**:
-   - Automatically triggers retraining script
-   - Optionally rebuilds Docker image
-   - Logs all metrics to MLflow
+### What Happens
+
+1. **Scoring**: Both datasets are scored through your API endpoint
+2. **Drift Check**: Computes PSI and KS test for all features and predictions
+3. **Decision**: If drift thresholds exceeded → triggers retraining
+4. **Retraining**: Runs `ray_tune_xgboost.py` with the current data
+5. **Output**: Saves drift report to `monitoring/out/drift_summary_*.json`
 
 ---
 
-## Detailed Usage
+## How It Works
 
-### `monitor_and_retrain.py` - Main Monitoring Pipeline
+### Step-by-Step Process
 
-#### Command Line Arguments
-
-```bash
-python monitor_and_retrain.py [OPTIONS]
+#### 1. Data Loading
+```python
+ref = pd.read_csv(args.baseline)     # Your baseline/reference data
+cur = pd.read_csv(args.current)      # New production data
 ```
 
-| Argument | Type | Required | Default | Description |
-|----------|------|----------|---------|-------------|
-| `--baseline` | str | ✅ Yes | - | Baseline reference data (CSV) |
-| `--current` | str | ✅ Yes | - | Current production data (CSV) |
-| `--endpoint` | str | ✅ Yes | - | Model serving endpoint (e.g., http://localhost:5001/invocations) |
-| `--retrain-script` | str | ✅ Yes | - | Path to training script (e.g., RAY/ray_tune_xgboost.py) |
-| `--tmp-dir` | str | No | `monitoring/tmp` | Temporary directory for scoring |
-| `--out-dir` | str | No | `monitoring/out` | Output directory for drift reports |
-| `--prediction-col` | str | No | `pred_proba` | Name of prediction column |
-| `--pred-key` | str | No | `None` | Extract this key from dict responses |
-| `--positive-class` | str | No | `None` | Positive class label for categorical predictions |
-| `--feature-psi-thresh` | float | No | `0.2` | PSI threshold for feature drift |
-| `--ks-p-thresh` | float | No | `0.01` | KS test p-value threshold |
-| `--drift-share-thresh` | float | No | `0.30` | Share of features that must drift to trigger |
-| `--pred-psi-thresh` | float | No | `0.2` | PSI threshold for prediction drift |
-| `--tracking-uri` | str | No | `""` | MLflow tracking URI for retraining |
-| `--experiment` | str | No | `mediwatch_train` | MLflow experiment name |
-| `--build-script` | str | No | `None` | Optional: Path to Docker build script |
-| `--image-tag` | str | No | `diabetic-xgb:serve` | Docker image tag |
-| `--target-col` | str | No | `None` | Target column name (passed to retrain script) |
+#### 2. Prediction Scoring
+```python
+# Sends data to your deployed model endpoint
+# POST http://localhost:5001/invocations with CSV payload
+# Attaches predictions as new column: pred_proba
+ref_scored = score_and_attach(ref, endpoint)
+cur_scored = score_and_attach(cur, endpoint)
+```
 
-#### Examples
+#### 3. Drift Calculation
 
-**Basic drift detection (no retraining)**:
+For **each feature**:
+- **Numeric**: Compute PSI (Population Stability Index) + KS test
+- **Categorical**: Compute PSI based on category frequencies
+
+For **predictions**:
+- Compute PSI on prediction distribution
+- Compute KS test on prediction values
+
+#### 4. Drift Decision
+
+**A feature drifts if**:
+```python
+(PSI >= 0.2) OR (KS p-value <= 0.01)
+```
+
+**Retraining is triggered if**:
+```python
+(share_of_drifted_features >= 30%) OR
+(max_feature_psi >= 1.0) OR              # Any feature has extreme drift
+(critical_feature_drifts) OR              # Important feature drifts
+(prediction_psi >= 0.2)                   # Model output shifts
+```
+
+#### 5. Automated Retraining
+
+If drift detected:
+```bash
+# Automatically runs your training script
+python RAY/ray_tune_xgboost.py \
+  --data current_data.csv \
+  --mlruns-dir /path/to/mlruns \
+  --num-samples 15 \
+  --cpus-per-trial 2
+```
+
+#### 6. Optional Docker Rebuild
+
+If `--build-script` provided:
+```bash
+# Automatically rebuilds deployment image
+python DEPLOY/build_docker_image.py \
+  --tracking-uri file:///path/to/mlruns \
+  --experiment xgb_diabetic_readmission_hpo \
+  --image-tag diabetic-xgb:serve
+```
+
+---
+
+## Drift Detection Methods
+
+### 1. PSI (Population Stability Index)
+
+**For Numeric Features**:
+```python
+# Bins data into deciles
+# Compares distribution between baseline and current
+PSI = Σ (P_current - P_baseline) × ln(P_current / P_baseline)
+```
+
+**Interpretation**:
+- `PSI < 0.1`: No significant change
+- `PSI 0.1-0.2`: Small change (monitor closely)
+- `PSI 0.2-0.25`: Moderate drift ⚠️ **Default threshold**
+- `PSI > 0.25`: Significant drift (action required)
+
+**For Categorical Features**:
+```python
+# Compares category frequencies
+PSI = Σ (P_current - P_baseline) × ln(P_current / P_baseline)
+```
+
+### 2. KS Test (Kolmogorov-Smirnov)
+
+**For Numeric Features**:
+- Compares empirical cumulative distribution functions
+- Returns p-value (probability distributions are the same)
+- **Threshold**: p < 0.01 indicates significant difference
+
+**For Predictions**:
+- Optional secondary check for prediction drift
+- Use `--pred-ks-p-thresh 0.01` to enable
+
+### 3. Multi-Gate Logic
+
+The system uses **multiple gates** for robust drift detection:
+
+```python
+trigger_retrain = (
+    # Gate 1: Share threshold
+    (share_of_drifted_features >= 0.30) OR
+    
+    # Gate 2: Extreme drift in any feature
+    (max_feature_psi >= 1.0) OR
+    
+    # Gate 3: Critical feature drift
+    (critical_feature_psi >= 0.5) OR
+    
+    # Gate 4: Prediction drift
+    (prediction_psi >= 0.2)
+)
+```
+
+---
+
+## Command Line Arguments
+
+### Required Arguments
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `--baseline` | str | Path to baseline/reference data CSV |
+| `--current` | str | Path to current/production data CSV |
+| `--endpoint` | str | Model serving endpoint URL |
+| `--retrain-script` | str | Path to training script (e.g., `RAY/ray_tune_xgboost.py`) |
+
+### Data & Output
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `--tmp-dir` | str | `monitoring/tmp` | Temporary directory for scored CSVs |
+| `--out-dir` | str | `monitoring/out` | Output directory for drift reports |
+| `--prediction-col` | str | `pred_proba` | Name for prediction column |
+| `--target-col` | str | `None` | Target column name (if needed by retrain script) |
+
+### Prediction Parsing
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `--pred-key` | str | `None` | Key to extract from dict responses (e.g., `pred_proba`) |
+| `--positive-class` | str | `None` | Positive class label for categorical predictions |
+
+### Feature Selection & Gates
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `--ignore-cols` | str | `""` | Comma-separated columns to ignore (e.g., IDs) |
+| `--critical-cols` | str | `""` | Comma-separated critical feature names |
+| `--critical-psi-thresh` | float | `0.5` | PSI threshold for critical features |
+| `--any-feature-psi-thresh` | float | `1.0` | Trigger if ANY feature PSI exceeds this |
+
+### Drift Thresholds
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `--feature-psi-thresh` | float | `0.2` | PSI threshold for regular features |
+| `--ks-p-thresh` | float | `0.01` | KS test p-value threshold |
+| `--drift-share-thresh` | float | `0.30` | Share of features that must drift (30%) |
+| `--pred-psi-thresh` | float | `0.2` | PSI threshold for predictions |
+| `--pred-ks-p-thresh` | float | `0.0` | KS p-value for predictions (0=disabled) |
+
+### MLflow & Deployment
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `--tracking-uri` | str | `""` | MLflow tracking URI (e.g., `file:///path/to/mlruns`) |
+| `--experiment` | str | `xgb_diabetic_readmission_hpo` | MLflow experiment name |
+| `--build-script` | str | `None` | Path to Docker build script (optional) |
+| `--image-tag` | str | `diabetic-xgb:serve` | Docker image tag |
+
+### Ray Tune HPO Parameters
+
+| Argument | Type | Default | Description |
+|----------|------|---------|-------------|
+| `--hpo-num-samples` | int | `15` | Number of Ray Tune trials |
+| `--hpo-cpus` | int | `2` | CPUs per trial |
+| `--hpo-gpus` | float | `0.0` | GPUs per trial |
+| `--hpo-test-size` | float | `0.2` | Test set proportion |
+| `--hpo-ray-dir` | str | `ray_exp_retrain` | Ray results directory |
+| `--hpo-seed` | int | `123` | Random seed for reproducibility |
+
+### Special Flags
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `--force` | flag | Force retraining regardless of drift |
+
+---
+
+## Usage Examples
+
+### Example 1: Basic Drift Detection (No Retraining)
+
 ```bash
 python code/MONITOR/monitor_and_retrain.py \
   --baseline data/X_train.csv \
@@ -204,40 +314,110 @@ python code/MONITOR/monitor_and_retrain.py \
   --retrain-script code/RAY/ray_tune_xgboost.py
 ```
 
-**Full automated pipeline with Docker rebuild**:
+**Result**: Checks for drift, saves report, but only retrains if drift detected.
+
+### Example 2: Fully automated pipeline
+
 ```bash
-python code/MONITOR/monitor_and_retrain.py \
-  --baseline data/X_train.csv \
-  --current data/diabetic_data_drift.csv \
+python MONITOR/monitor_and_retrain.py \
+  --baseline /home/ec2-user/projects/patient_selection/data/diabetic_data.csv \
+  --current  /home/ec2-user/projects/patient_selection/data/diabetic_data_drift.csv \
   --endpoint http://localhost:5001/invocations \
-  --retrain-script code/RAY/ray_tune_xgboost.py \
   --tracking-uri file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns \
-  --experiment xgb_diabetic_readmission_hpo \
-  --build-script code/DEPLOY/build_docker_image.py \
-  --image-tag diabetic-xgb:serve-v2
+  --retrain-script /home/ec2-user/projects/patient_selection/code/RAY/ray_tune_xgboost.py \
+  --build-script /home/ec2-user/projects/patient_selection/code/DEPLOY/build_docker_image.py \
+  --image-tag diabetic-xgb:serve \
+  --ignore-cols encounter_id,patient_nbr \
+  --any-feature-psi-thresh 1.0 \
+  --critical-cols number_inpatient \
+  --critical-psi-thresh 0.5 \
+  --pred-ks-p-thresh 1e-9 \
+  --hpo-num-samples 10 \
+  --hpo-cpus 4 \
+  --hpo-gpus 0 \
+  --hpo-test-size 0.2 \
+  --hpo-ray-dir ray_exp_retrain \
+  --hpo-seed 2025
+
 ```
 
-**Handling dict predictions with specific key**:
+
+**Result**: Detects drift → Retrains → Rebuilds Docker image
+
+### Example 3: Handling Dict Predictions
+
+If your API returns:
+```json
+[{"pred_proba": 0.73, "label": "YES"}, {"pred_proba": 0.28, "label": "NO"}]
+```
+
+Use:
 ```bash
 python code/MONITOR/monitor_and_retrain.py \
   --baseline data/baseline.csv \
-  --current data/production_batch.csv \
-  --endpoint http://prod-api:8080/predict \
-  --pred-key probability \
-  --retrain-script ml/train.py
+  --current data/production.csv \
+  --endpoint http://api.example.com/predict \
+  --pred-key pred_proba \
+  --retrain-script code/RAY/ray_tune_xgboost.py
 ```
 
-**Handling categorical class predictions**:
+### Example 4: Handling Class Label Predictions
+
+If your API returns:
+```json
+["YES", "NO", "YES", "NO"]
+```
+
+Use:
 ```bash
 python code/MONITOR/monitor_and_retrain.py \
   --baseline data/baseline.csv \
-  --current data/production_batch.csv \
+  --current data/production.csv \
   --endpoint http://localhost:5001/invocations \
   --positive-class YES \
   --retrain-script code/RAY/ray_tune_xgboost.py
 ```
 
-**Custom thresholds (less sensitive)**:
+### Example 5: Ignoring ID Columns
+
+```bash
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/production.csv \
+  --endpoint http://localhost:5001/invocations \
+  --ignore-cols "encounter_id,patient_nbr" \
+  --retrain-script code/RAY/ray_tune_xgboost.py
+```
+
+### Example 6: Critical Features with Stricter Thresholds
+
+```bash
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/production.csv \
+  --endpoint http://localhost:5001/invocations \
+  --critical-cols "number_inpatient,time_in_hospital,num_medications" \
+  --critical-psi-thresh 0.3 \
+  --retrain-script code/RAY/ray_tune_xgboost.py
+```
+
+**Result**: If critical features drift > 0.3 PSI, immediate retraining triggered
+
+### Example 7: More Sensitive Drift Detection
+
+```bash
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/production.csv \
+  --endpoint http://localhost:5001/invocations \
+  --feature-psi-thresh 0.15 \
+  --drift-share-thresh 0.20 \
+  --pred-psi-thresh 0.15 \
+  --retrain-script code/RAY/ray_tune_xgboost.py
+```
+
+### Example 8: Less Sensitive (Production-Stable)
+
 ```bash
 python code/MONITOR/monitor_and_retrain.py \
   --baseline data/X_train.csv \
@@ -249,431 +429,360 @@ python code/MONITOR/monitor_and_retrain.py \
   --retrain-script code/RAY/ray_tune_xgboost.py
 ```
 
-### `run_monitor.py` - Evidently Monitoring
-
-#### Configuration
-
-Edit `configs/monitoring.yaml`:
-
-```yaml
-mlflow_tracking_uri: "file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns"
-mlflow_experiment: "MediWatch-Monitoring"
-
-paths:
-  reference: "/home/ec2-user/projects/patient_selection/data/X_train.csv"
-  logs_dir: "/home/ec2-user/projects/patient_selection/code/DEPLOY/logs"
-  reports_out: "/home/ec2-user/projects/patient_selection/code/MONITOR/reports"
-
-drift_thresholds:
-  share_of_drifted_columns: 0.30
-  p_value: 0.05
-```
-
-#### Usage
+### Example 9: Force Retraining (No Drift Check)
 
 ```bash
-cd code/MONITOR/
-python scripts/run_monitor.py
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/latest_batch.csv \
+  --endpoint http://localhost:5001/invocations \
+  --retrain-script code/RAY/ray_tune_xgboost.py \
+  --force
 ```
 
-**Exit codes**:
-- `0`: No drift detected (normal operation)
-- `2`: Drift alert triggered (requires attention)
+**Result**: Skips drift detection, immediately retrains
 
-#### Viewing Reports
-
-Open the generated HTML reports in your browser:
-```bash
-# On EC2 instance
-cd code/MONITOR/reports/
-ls -lt evidently_report_*.html
-
-# Copy to local machine via SCP
-scp -i key.pem ec2-user@<instance>:~/projects/patient_selection/code/MONITOR/reports/*.html .
-
-# Or open via SSH tunnel
-ssh -i key.pem -L 8000:localhost:8000 ec2-user@<instance>
-# Then on instance:
-cd code/MONITOR/reports/
-python -m http.server 8000
-# Access at http://localhost:8000
-```
-
-### `run_monitor_simple.py` - Statistical Monitoring
-
-#### Usage
+### Example 10: Fast Retraining (Fewer HPO Trials)
 
 ```bash
-cd code/MONITOR/
-python scripts/run_monitor_simple.py
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/production.csv \
+  --endpoint http://localhost:5001/invocations \
+  --retrain-script code/RAY/ray_tune_xgboost.py \
+  --hpo-num-samples 5 \
+  --hpo-cpus 4
 ```
 
-**With custom config**:
+**Result**: Quick retraining with only 5 HPO trials instead of default 15
+
+---
+
+## Configuration & Thresholds
+
+### Recommended Settings by Environment
+
+#### Development/Testing
 ```bash
-python scripts/run_monitor_simple.py --config /path/to/custom_monitoring.yaml
+--feature-psi-thresh 0.15       # More sensitive
+--drift-share-thresh 0.20       # Lower threshold
+--hpo-num-samples 5             # Faster retraining
 ```
 
-#### Output Format
-
-**drift_table_*.csv**:
-```csv
-feature,type,ks_stat,ks_pvalue,psi,drifted
-num_lab_procedures,numeric,0.0234,0.123,0.156,False
-number_inpatient,numeric,0.0891,0.001,0.312,True
-race,categorical,,,0.089,False
-gender,categorical,,,0.023,False
+#### Staging
+```bash
+--feature-psi-thresh 0.2        # Moderate sensitivity
+--drift-share-thresh 0.30       # Default
+--hpo-num-samples 15            # Balanced quality/speed
 ```
 
-**drift_summary_*.json**:
+#### Production
+```bash
+--feature-psi-thresh 0.25       # Less sensitive (avoid false alarms)
+--drift-share-thresh 0.40       # Higher threshold
+--hpo-num-samples 30            # Better model quality
+--critical-cols "key_features"  # Focus on important features
+```
+
+### Threshold Tuning Guide
+
+**Too Many False Alarms?**
+- ⬆️ Increase `--feature-psi-thresh` from 0.2 → 0.3
+- ⬆️ Increase `--drift-share-thresh` from 0.30 → 0.50
+- ⬆️ Increase `--pred-psi-thresh` from 0.2 → 0.3
+
+**Missing Real Drift?**
+- ⬇️ Decrease `--feature-psi-thresh` from 0.2 → 0.15
+- ⬇️ Decrease `--drift-share-thresh` from 0.30 → 0.20
+- ➕ Add `--critical-cols` for important features
+- ➕ Enable `--pred-ks-p-thresh 0.01`
+
+**Focusing on Key Features?**
+- Use `--critical-cols "feat1,feat2,feat3"`
+- Set `--critical-psi-thresh 0.3` (stricter than regular)
+- Use `--any-feature-psi-thresh 0.5` (trigger on any extreme drift)
+
+---
+
+## Output Files
+
+### Drift Summary JSON
+
+**Location**: `monitoring/out/drift_summary_20251009T213138Z.json`
+
+**Structure**:
 ```json
 {
-  "window": "2025-10-09",
-  "share_of_drifted_columns": 0.25,
-  "global_min_pvalue": 0.001,
-  "alert": false,
-  "thresholds": {
-    "share": 0.30,
-    "pvalue": 0.05
-  }
+  "trigger_retrain": false,
+  "share_drifted": 0.0392,
+  "n_features": 51,
+  "n_drifted": 2,
+  "max_feature_psi": 0.0000,
+  "any_feature_psi_thresh": 1.0,
+  "critical_hits": [],
+  "critical_psi_thresh": 0.5,
+  "pred_psi": 0.0,
+  "pred_ks_p": 1.0,
+  "pred_gate": false,
+  "feature_psi_thresh": 0.2,
+  "ks_p_thresh": 0.01,
+  "drift_share_thresh": 0.3,
+  "pred_psi_thresh": 0.2,
+  "pred_ks_p_thresh": 0.0,
+  "details": [
+    {
+      "column": "time_in_hospital",
+      "type": "numeric",
+      "psi": 0.0,
+      "ks_p": 1.0,
+      "drift": false
+    },
+    {
+      "column": "num_medications",
+      "type": "numeric",
+      "psi": 0.1234,
+      "ks_p": 0.05,
+      "drift": false
+    },
+    ...
+  ]
 }
 ```
 
----
+### Temporary Scoring Files
 
-## Configuration
+**Location**: `monitoring/tmp/`
 
-### Evidently Monitoring (`configs/monitoring.yaml`)
+- `ref.csv`: Baseline data with `pred_proba` column
+- `cur.csv`: Current data with `pred_proba` column
 
-```yaml
-mlflow_tracking_uri: "file:///absolute/path/to/mlruns"
-mlflow_experiment: "MediWatch-Monitoring"
-
-paths:
-  # Baseline reference data (training set)
-  reference: "/path/to/X_train.csv"
-  
-  # Directory where production predictions are logged
-  logs_dir: "/path/to/logs"
-  
-  # Output directory for generated reports
-  reports_out: "/path/to/reports"
-
-drift_thresholds:
-  # Alert if >= 30% of features drift
-  share_of_drifted_columns: 0.30
-  
-  # Alert if dataset-level p-value < 0.05
-  p_value: 0.05
-```
-
-### Drift Thresholds Explained
-
-#### Feature PSI (Population Stability Index)
-
-```
-PSI < 0.1    : No significant change
-PSI 0.1-0.2  : Small change (monitor)
-PSI 0.2-0.25 : Moderate change (warning)
-PSI > 0.25   : Significant change (action required)
-```
-
-**Default**: 0.2 (moderate threshold)
-
-#### KS Test p-value
-
-Statistical test comparing two distributions:
-- **p < 0.01**: Distributions are significantly different (drift detected)
-- **p >= 0.01**: No significant difference
-
-**Default**: 0.01 (stringent threshold)
-
-#### Share of Drifted Features
-
-Percentage of features that must show drift to trigger retraining:
-- **30%**: Conservative (allows some natural variation)
-- **20%**: Moderate (more sensitive)
-- **50%**: Lenient (only major shifts trigger)
-
-**Default**: 0.30 (30%)
-
-#### Prediction PSI
-
-Drift in the **distribution of predictions** (not input features):
-- High prediction drift may indicate model degradation
-- Can detect drift even if individual features look normal
-
-**Default**: 0.2
-
----
-
-## Drift Detection Logic
-
-### How Drift is Detected
-
-The monitoring system uses a **multi-gate approach**:
-
-```python
-trigger_retrain = (
-    (share_of_drifted_features >= drift_share_thresh) OR
-    (prediction_psi >= pred_psi_thresh)
-)
-```
-
-**A feature is considered "drifted" if**:
-- **Numeric**: `(PSI >= 0.2) OR (KS p-value <= 0.01)`
-- **Categorical**: `PSI >= 0.2`
-
-### Drift Metrics
-
-#### 1. PSI (Population Stability Index)
-
-Measures the shift in a feature's distribution:
-
-```
-PSI = Σ (P_current - P_baseline) × ln(P_current / P_baseline)
-```
-
-Where P is the proportion in each bin.
-
-**Interpretation**:
-- Symmetric (treats shifts in either direction equally)
-- Unbounded (can exceed 1.0 for large shifts)
-- Industry standard for monitoring
-
-#### 2. KS Test (Kolmogorov-Smirnov)
-
-Statistical test for numeric features:
-- Compares empirical CDFs (cumulative distribution functions)
-- Returns a p-value (probability that distributions are the same)
-- Non-parametric (no assumptions about distribution shape)
-
-#### 3. Chi-squared Test
-
-Statistical test for categorical features:
-- Compares frequency distributions
-- Tests independence of categorical variables
-- Returns a p-value
-
----
-
-## Automated Retraining
-
-### Retraining Workflow
-
-When drift is detected, `monitor_and_retrain.py` automatically:
-
-1. **Saves drift report** to `monitoring/out/drift_summary_*.json`
-2. **Invokes training script** with current data
-3. **Waits for training completion**
-4. **Optionally rebuilds Docker image** (if `--build-script` provided)
-5. **Logs all metrics to MLflow**
-
-### Retraining Script Requirements
-
-Your training script must accept:
-```bash
-python your_train_script.py \
-  --data /path/to/new_data.csv \
-  --experiment your_experiment_name \
-  [--target your_target_column]
-```
-
-**Example**: `code/RAY/ray_tune_xgboost.py` already follows this interface:
-```python
-if __name__ == "__main__":
-    parser.add_argument("--data", required=True)
-    parser.add_argument("--experiment", default="xgb_diabetic_readmission_hpo")
-    # ... etc
-```
-
-### Build Script Requirements
-
-Your build script must accept:
-```bash
-python your_build_script.py \
-  --tracking-uri file:///path/to/mlruns \
-  --experiment your_experiment_name \
-  --image-tag your-image:tag \
-  --serve-port 5001
-```
-
-**Example**: `code/DEPLOY/build_docker_image.py` already follows this interface.
-
-### Environment Variables
-
-The monitoring script passes `MLFLOW_TRACKING_URI` to subprocesses:
-```python
-env = os.environ.copy()
-if args.tracking_uri:
-    env["MLFLOW_TRACKING_URI"] = args.tracking_uri
-subprocess.check_call(retrain_cmd, env=env)
-```
+These are automatically created during the scoring step and retained for debugging.
 
 ---
 
 ## Integration with Pipeline
 
-### Complete MLOps Loop
+### Complete MLOps Cycle
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Production Serving                       │
-│  Docker Container (port 5001) → Predictions via /invocations│
+│                1. Model Training (RAY)                       │
+│   ray_tune_xgboost.py → Best model → MLflow tracking        │
 └────────────────────┬────────────────────────────────────────┘
-                     │
-                     ├─→ [Optional] logged_model.py
-                     │   └─→ log_utils.py
-                     │       └─→ logs/preds_*.parquet
-                     │
                      ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                    Drift Detection                           │
-│  monitor_and_retrain.py OR run_monitor.py                   │
-│  • Compares baseline vs current                              │
-│  • Computes PSI, KS test, Chi²                              │
-│  • Checks thresholds                                         │
+│                2. Model Deployment (DEPLOY)                  │
+│   build_docker_image.py → Docker container → Port 5001      │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│                3. Production Serving                         │
+│   POST /invocations → Predictions → Business value          │
+└────────────────────┬────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────────────────────┐
+│         4. Drift Monitoring (MONITOR) ← YOU ARE HERE         │
+│   monitor_and_retrain.py                                    │
+│   • Score baseline + current data                           │
+│   • Compute drift metrics (PSI, KS)                         │
+│   • Check thresholds                                        │
 └────────────────────┬────────────────────────────────────────┘
                      │
-                     ├─→ monitoring/out/drift_summary.json
-                     │
-        ┌────────────┴──────────── Drift Detected?
-        │                                        │
-       No                                       Yes
-        │                                        │
-        └─→ Exit 0                               ↓
+         ┌───────────┴─────────── Drift Detected?
+         │                                     │
+        No                                    Yes
+         │                                     │
+         └─→ Continue Serving                  ↓
                               ┌─────────────────────────────────┐
-                              │    Automated Retraining         │
-                              │  RAY/ray_tune_xgboost.py        │
-                              │  • HPO with new data            │
-                              │  • Log to MLflow                │
+                              │  5. Auto-Retrain (back to RAY)  │
+                              │  • Trigger ray_tune_xgboost.py  │
+                              │  • Train on current data        │
+                              │  • Save to MLflow               │
                               └──────────┬──────────────────────┘
-                                         │
                                          ↓
                               ┌─────────────────────────────────┐
-                              │    Docker Image Rebuild         │
-                              │  DEPLOY/build_docker_image.py   │
-                              │  • Export new model             │
-                              │  • Build container              │
+                              │  6. Auto-Redeploy (DEPLOY)      │
+                              │  • build_docker_image.py        │
+                              │  • New container                │
                               └──────────┬──────────────────────┘
                                          │
-                                         ↓
-                              ┌─────────────────────────────────┐
-                              │      Redeploy Container         │
-                              │  docker stop old_container      │
-                              │  docker run new_image           │
-                              └─────────────────────────────────┘
+                                         └─→ Back to Production Serving
 ```
-
-### Integration Points
-
-#### With EDA Component
-- Uses training baseline (`X_train.csv`) as reference
-- Reference data created during EDA phase
-
-#### With RAY Component
-- Triggers retraining via `ray_tune_xgboost.py`
-- Logs all experiments to same MLflow tracking store
-- Uses same preprocessing pipeline
-
-#### With DEPLOY Component
-- Automatically rebuilds Docker images after retraining
-- Can trigger container restart (requires orchestration layer)
-- Maintains same API interface
 
 ### Scheduling Options
 
-#### Option 1: Cron Job
+#### Option 1: Cron (Simple)
+
 ```bash
-# Add to crontab (daily at 2 AM)
+# Run daily at 2 AM
 0 2 * * * cd /home/ec2-user/projects/patient_selection && \
   python code/MONITOR/monitor_and_retrain.py \
   --baseline data/X_train.csv \
-  --current data/production_batch.csv \
+  --current /tmp/daily_production_data.csv \
   --endpoint http://localhost:5001/invocations \
   --retrain-script code/RAY/ray_tune_xgboost.py \
+  --tracking-uri file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns \
   >> logs/monitoring.log 2>&1
 ```
 
-#### Option 2: Airflow DAG
+#### Option 2: Systemd Timer
+
+Create `/etc/systemd/system/drift-monitor.service`:
+```ini
+[Unit]
+Description=Drift Monitoring and Retraining
+After=network.target
+
+[Service]
+Type=oneshot
+User=ec2-user
+WorkingDirectory=/home/ec2-user/projects/patient_selection
+ExecStart=/home/ec2-user/projects/patient_selection/code/patient_env/bin/python \
+  code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current /tmp/production_data.csv \
+  --endpoint http://localhost:5001/invocations \
+  --retrain-script code/RAY/ray_tune_xgboost.py
+```
+
+Create `/etc/systemd/system/drift-monitor.timer`:
+```ini
+[Unit]
+Description=Run drift monitoring daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Enable:
+```bash
+sudo systemctl enable drift-monitor.timer
+sudo systemctl start drift-monitor.timer
+```
+
+#### Option 3: Airflow DAG
+
 ```python
 from airflow import DAG
 from airflow.operators.bash import BashOperator
+from datetime import datetime, timedelta
 
-with DAG('drift_monitoring', schedule_interval='@daily') as dag:
-    monitor_task = BashOperator(
-        task_id='monitor_drift',
-        bash_command='python code/MONITOR/monitor_and_retrain.py ...',
-        env={'MLFLOW_TRACKING_URI': 'file:///...'}
-    )
-```
+default_args = {
+    'owner': 'data-science',
+    'depends_on_past': False,
+    'start_date': datetime(2025, 1, 1),
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
 
-#### Option 3: Kubernetes CronJob
-```yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: drift-monitor
-spec:
-  schedule: "0 2 * * *"
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: monitor
-            image: diabetic-monitor:latest
-            command: ["python", "monitor_and_retrain.py", ...]
+dag = DAG(
+    'drift_monitoring_pipeline',
+    default_args=default_args,
+    schedule_interval='@daily',
+    catchup=False,
+)
+
+monitor_task = BashOperator(
+    task_id='monitor_and_retrain',
+    bash_command='''
+    cd /home/ec2-user/projects/patient_selection && \
+    python code/MONITOR/monitor_and_retrain.py \
+      --baseline data/X_train.csv \
+      --current /data/production/{{ ds }}.csv \
+      --endpoint http://model-api:5001/invocations \
+      --retrain-script code/RAY/ray_tune_xgboost.py \
+      --tracking-uri file:///home/ec2-user/projects/patient_selection/code/RAY/mlruns
+    ''',
+    dag=dag,
+)
 ```
 
 ---
 
-## Prediction Logging
+## Advanced Features
 
-### `logged_model.py` - Transparent Logging Wrapper
+### 1. Critical Features Monitoring
 
-Wraps your MLflow model to **automatically log all predictions**:
+Monitor **key clinical features** more strictly:
 
-```python
-from app.logged_model import LoggedModel
-import mlflow
-
-# Wrap existing model
-logged_model = LoggedModel()
-
-# Use in MLflow serving
-mlflow.pyfunc.save_model(
-    path="logged_model_dir",
-    python_model=logged_model,
-    artifacts={"base_model": "path/to/base_model"}
-)
+```bash
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/production.csv \
+  --endpoint http://localhost:5001/invocations \
+  --critical-cols "number_inpatient,time_in_hospital,num_medications,number_diagnoses" \
+  --critical-psi-thresh 0.3 \
+  --retrain-script code/RAY/ray_tune_xgboost.py
 ```
 
-**What it does**:
-- Intercepts every prediction call
-- Appends features + predictions to daily Parquet file
-- Zero impact on prediction latency
-- Automatic date-based partitioning
+**Use case**: Hospital protocols change, affecting specific features
 
-### `log_utils.py` - Logging Utilities
+### 2. Extreme Drift Gate
 
-```python
-from app.log_utils import append_prediction_log
+Trigger retraining if **any single feature** shows extreme drift:
 
-# After making predictions
-append_prediction_log(
-    features_df=input_features,
-    y_pred=predictions,
-    req_meta={"user_id": "123", "timestamp": "..."}
-)
+```bash
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/production.csv \
+  --endpoint http://localhost:5001/invocations \
+  --any-feature-psi-thresh 0.5 \
+  --retrain-script code/RAY/ray_tune_xgboost.py
 ```
 
-**Output format**: `logs/preds_2025-10-09.parquet`
+**Use case**: Rapid changes in patient demographics or medical practices
 
+### 3. Prediction Drift with KS Test
+
+Double-check prediction drift using both PSI and KS test:
+
+```bash
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/production.csv \
+  --endpoint http://localhost:5001/invocations \
+  --pred-psi-thresh 0.2 \
+  --pred-ks-p-thresh 0.01 \
+  --retrain-script code/RAY/ray_tune_xgboost.py
 ```
-| feature1 | feature2 | ... | __prediction__ | __timestamp__ | __user_id__ |
-|----------|----------|-----|----------------|---------------|-------------|
-| 1.2      | "A"      | ... | 0.73           | 2025-10-09T10:30:00 | 123 |
+
+**Use case**: Model output distribution shifts (concept drift)
+
+### 4. Ignoring Noisy Columns
+
+Exclude columns that change frequently but aren't meaningful:
+
+```bash
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/production.csv \
+  --endpoint http://localhost:5001/invocations \
+  --ignore-cols "encounter_id,patient_nbr,admission_source_id" \
+  --retrain-script code/RAY/ray_tune_xgboost.py
 ```
+
+**Use case**: ID columns, timestamps, or administrative fields
+
+### 5. Fast Retraining for Emergencies
+
+Quick retraining with minimal HPO trials:
+
+```bash
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/emergency_data.csv \
+  --endpoint http://localhost:5001/invocations \
+  --retrain-script code/RAY/ray_tune_xgboost.py \
+  --hpo-num-samples 3 \
+  --hpo-cpus 8 \
+  --force
+```
+
+**Use case**: Critical system failure, need immediate model update
 
 ---
 
@@ -681,22 +790,22 @@ append_prediction_log(
 
 ### Common Issues
 
-#### 1. "No production logs in logs_dir"
+#### 1. Endpoint Connection Errors
 
-**Error**: `FileNotFoundError: No production logs in /path/to/logs`
+**Error**: `requests.exceptions.ConnectionError: Connection refused`
 
-**Cause**: No prediction logs available for monitoring
+**Cause**: Model endpoint not running
 
 **Solution**:
 ```bash
-# Check if logs directory exists and has .parquet files
-ls -la /path/to/logs/preds_*.parquet
+# Check if container is running
+docker ps | grep diabetic
 
-# If using logged_model.py, ensure PRED_LOG_DIR is set
-export PRED_LOG_DIR=/path/to/logs
+# Start if needed
+docker run -d -p 5001:5001 --name model diabetic-xgb:serve
 
-# If serving with Docker, mount the logs volume
-docker run -v $(pwd)/logs:/logs -e PRED_LOG_DIR=/logs ...
+# Test endpoint
+curl -X GET http://localhost:5001/health
 ```
 
 #### 2. Prediction Parsing Errors
@@ -709,223 +818,276 @@ docker run -v $(pwd)/logs:/logs -e PRED_LOG_DIR=/logs ...
 ```bash
 # Test endpoint manually
 curl -X POST http://localhost:5001/invocations \
-  -H "Content-Type: application/json" \
-  -d '{"dataframe_records": [{"age": 50, ...}]}'
+  -H "Content-Type: text/csv" \
+  --data-binary @data/X_train.csv | head
 
 # If returns dict with key:
-python monitor_and_retrain.py ... --pred-key pred_proba
+--pred-key pred_proba
 
 # If returns class labels:
-python monitor_and_retrain.py ... --positive-class YES
+--positive-class YES
 ```
 
-#### 3. MLflow Tracking URI Errors
+#### 3. Column Mismatch
 
-**Error**: `No such file or directory: mlruns`
+**Error**: `KeyError: 'some_column'`
+
+**Cause**: Current data missing columns from baseline
+
+**Solution**:
+```bash
+# Check columns
+python -c "
+import pandas as pd
+baseline = pd.read_csv('data/X_train.csv')
+current = pd.read_csv('data/production.csv')
+print('Baseline columns:', set(baseline.columns))
+print('Current columns:', set(current.columns))
+print('Missing in current:', set(baseline.columns) - set(current.columns))
+"
+
+# Add missing columns or use --ignore-cols
+```
+
+#### 4. Retraining Script Fails
+
+**Error**: `subprocess.CalledProcessError: Command ... returned non-zero exit status 1`
+
+**Cause**: Training script error
+
+**Solution**:
+```bash
+# Run training manually to see full error
+python code/RAY/ray_tune_xgboost.py \
+  --data data/diabetic_data_drift.csv \
+  --mlruns-dir /home/ec2-user/projects/patient_selection/code/RAY/mlruns \
+  --num-samples 5
+
+# Check logs
+cat ~/ray_results/*/logs/*.out
+```
+
+#### 5. MLflow Tracking URI Issues
+
+**Error**: `No such file or directory: 'mlruns'`
 
 **Cause**: Relative path issue
 
-**Solution**: Always use **absolute paths**:
+**Solution**: Always use absolute paths:
 ```bash
-# Wrong
---tracking-uri file:mlruns
-
-# Correct
 --tracking-uri file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns
+# NOT: file:mlruns or file:./RAY/mlruns
 ```
 
-#### 4. Permission Errors
+#### 6. No Drift Detected (But Visually Obvious)
+
+**Symptom**: Data clearly changed but no drift triggered
+
+**Solution**: Make thresholds more sensitive:
+```bash
+--feature-psi-thresh 0.15       # from 0.2
+--drift-share-thresh 0.20       # from 0.30
+--ks-p-thresh 0.05              # from 0.01
+```
+
+Or check specific columns:
+```bash
+# View drift details
+cat monitoring/out/drift_summary_*.json | jq '.details[] | select(.drift == true)'
+```
+
+#### 7. Too Many Retrainings (False Alarms)
+
+**Symptom**: Retraining triggered too frequently
+
+**Solution**: Make thresholds less sensitive:
+```bash
+--feature-psi-thresh 0.3        # from 0.2
+--drift-share-thresh 0.50       # from 0.30
+```
+
+Or focus on critical features only:
+```bash
+--critical-cols "key_feature1,key_feature2"
+--any-feature-psi-thresh 0.6    # only extreme drift
+```
+
+#### 8. Permission Errors
 
 **Error**: `PermissionError: [Errno 13] Permission denied: 'monitoring/out'`
 
-**Cause**: Directory doesn't exist or lacks write permissions
-
 **Solution**:
 ```bash
-# Create directories
+# Create directories with correct permissions
 mkdir -p code/MONITOR/monitoring/out
 mkdir -p code/MONITOR/monitoring/tmp
-mkdir -p code/MONITOR/reports
-
-# Fix permissions
 chmod 755 code/MONITOR/monitoring/out
+chmod 755 code/MONITOR/monitoring/tmp
 ```
-
-#### 5. Retraining Script Fails
-
-**Error**: Training subprocess exits with non-zero code
-
-**Cause**: Training script doesn't accept required arguments
-
-**Solution**: Ensure your training script accepts:
-```python
-# Required arguments
-parser.add_argument("--data", required=True)
-parser.add_argument("--experiment", default="default")
-
-# Optional (if using --target-col)
-parser.add_argument("--target", default="readmitted")
-```
-
-#### 6. Docker Build Fails After Retraining
-
-**Error**: `No run named 'best_model_full_train' found`
-
-**Cause**: Retraining script didn't create expected run
-
-**Solution**: Check your training script creates a run with:
-```python
-with mlflow.start_run(run_name="best_model_full_train"):
-    # ... train and log model
-    mlflow.sklearn.log_model(model, artifact_path="model")
-```
-
-#### 7. High False Positive Rate (Too Many Alerts)
-
-**Symptom**: Drift detected too frequently
-
-**Solution**: Adjust thresholds to be less sensitive:
-```bash
-python monitor_and_retrain.py \
-  --feature-psi-thresh 0.3 \      # from 0.2
-  --drift-share-thresh 0.50 \     # from 0.30
-  --pred-psi-thresh 0.3           # from 0.2
-```
-
-#### 8. Evidently Import Errors
-
-**Error**: `ModuleNotFoundError: No module named 'evidently'`
-
-**Cause**: Evidently not installed
-
-**Solution**:
-```bash
-pip install evidently==0.4.27
-
-# Or use simple monitoring (no Evidently required)
-python scripts/run_monitor_simple.py
-```
-
----
-
-## Performance Considerations
-
-### Monitoring Overhead
-
-| Component | Scoring Time | Report Time | Storage per Day |
-|-----------|--------------|-------------|-----------------|
-| `monitor_and_retrain.py` | ~1-2s per 1K rows | <1s | ~10KB JSON |
-| `run_monitor.py` | N/A | ~5-10s | ~500KB HTML + 100KB JSON |
-| `run_monitor_simple.py` | N/A | ~1-2s | ~50KB CSV + 10KB JSON |
-
-### Optimization Tips
-
-1. **Batch predictions**: Score in batches of 1000-10000 rows
-2. **Parallel monitoring**: Run multiple monitors for different features
-3. **Sampling**: For very large datasets, sample before monitoring
-4. **Archive old reports**: Keep only last N reports
-5. **Async retraining**: Use job queue (Celery, RQ) for retraining
 
 ---
 
 ## Best Practices
 
-### 1. Reference Data Selection
+### 1. Baseline Selection
 
 ✅ **DO**:
-- Use validation set (not training set) as reference
-- Ensure reference is representative of normal operation
-- Update reference periodically (e.g., every 6 months)
+- Use a **held-out validation set** (not training set)
+- Ensure baseline is **representative** of normal operation
+- **Update baseline** periodically (e.g., quarterly)
+- **Version baselines** (`baseline_2025Q1.csv`, `baseline_2025Q2.csv`)
 
 ❌ **DON'T**:
 - Use entire training set (too large, slow)
-- Use test set (not representative of production)
-- Never update reference (model will "drift away")
+- Use test set (not production-representative)
+- Never update baseline (model will "drift away")
 
 ### 2. Threshold Configuration
 
 ✅ **DO**:
-- Start conservative (high thresholds)
-- Monitor false positive rate
-- Adjust based on business impact
-- Document threshold changes
+- **Start conservative** (higher thresholds)
+- **Monitor false positive rate** over 1-2 weeks
+- **Adjust gradually** based on production behavior
+- **Document changes** in a changelog
 
 ❌ **DON'T**:
-- Use default thresholds blindly
-- Set thresholds too low (alert fatigue)
+- Copy default thresholds blindly
 - Change thresholds too frequently
+- Set too-low thresholds (alert fatigue)
 
-### 3. Alerting Strategy
-
-✅ **DO**:
-- Log all drift checks (even when no drift)
-- Send alerts to appropriate channels (Slack, PagerDuty)
-- Include drift report in alert
-- Have clear escalation path
-
-❌ **DON'T**:
-- Only log when drift detected
-- Alert everyone for every drift
-- Alert without context/reports
-
-### 4. Retraining Automation
+### 3. Critical Features
 
 ✅ **DO**:
-- Test retraining pipeline thoroughly
-- Have rollback mechanism
-- Validate new model before deployment
-- Keep multiple model versions
+- Identify **domain-critical features** (clinical judgment)
+- Use **stricter thresholds** for critical features
+- **Document rationale** for critical feature selection
 
 ❌ **DON'T**:
-- Deploy retrained models automatically without validation
-- Overwrite only model version
-- Skip model performance checks
+- Mark all features as critical
+- Use same threshold for all features
+
+### 4. Scheduling
+
+✅ **DO**:
+- Run monitoring **daily** or **weekly**
+- Run during **low-traffic periods** (2-4 AM)
+- **Log all runs** (even when no drift)
+- **Alert on failures** (not just drift)
+
+❌ **DON'T**:
+- Run too frequently (hourly)
+- Run during peak hours
+- Only log drift events
+
+### 5. Retraining Strategy
+
+✅ **DO**:
+- **Validate** new model before deployment
+- **Keep old model** for rollback
+- **A/B test** new vs old model
+- **Document** each retraining event
+
+❌ **DON'T**:
+- Auto-deploy without validation
+- Delete old models immediately
+- Retrain on every tiny drift
+
+### 6. Production Deployment
+
+✅ **DO**:
+- Use **blue-green deployment** (two containers)
+- Implement **health checks**
+- Have **rollback procedure**
+- Test **with sample data** before full cutover
+
+❌ **DON'T**:
+- Replace running container immediately
+- Deploy without testing
+- Have no rollback plan
 
 ---
 
 ## Testing
 
-### Test Drift Detection
+### Test with Simulated Drift
 
-Use the provided drift simulation:
+The project includes drift-simulated data:
 
 ```bash
-# Train baseline model on original data
-python code/RAY/ray_tune_xgboost.py \
-  --data data/diabetic_data.csv
-
-# Deploy baseline model
-python code/DEPLOY/build_docker_image.py
+# 1. Start baseline model
 docker run -d -p 5001:5001 --name baseline diabetic-xgb:serve
 
-# Test with drift data (has +10 on number_inpatient)
+# 2. Run monitoring with drift data (has +10 on number_inpatient)
 python code/MONITOR/monitor_and_retrain.py \
   --baseline data/diabetic_data.csv \
   --current data/diabetic_data_drift.csv \
   --endpoint http://localhost:5001/invocations \
-  --retrain-script code/RAY/ray_tune_xgboost.py
+  --retrain-script code/RAY/ray_tune_xgboost.py \
+  --tracking-uri file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns \
+  --hpo-num-samples 3
 
-# Should detect drift and trigger retraining!
+# Should detect drift in number_inpatient and trigger retraining!
 ```
 
-### Unit Testing
+### Unit Testing Examples
 
 ```python
 # test_drift_detection.py
-from monitor_and_retrain import psi_numeric, detect_drift
+from monitor_and_retrain import psi_numeric, psi_categorical, detect_drift
 import numpy as np
+import pandas as pd
 
 def test_psi_no_drift():
+    """Same distribution → low PSI"""
     a = np.random.normal(0, 1, 1000)
     b = np.random.normal(0, 1, 1000)
     psi = psi_numeric(a, b)
-    assert psi < 0.1, "PSI should be low for same distribution"
+    assert psi < 0.1, f"Expected low PSI, got {psi}"
 
 def test_psi_with_drift():
+    """Shifted distribution → high PSI"""
     a = np.random.normal(0, 1, 1000)
-    b = np.random.normal(3, 1, 1000)  # Shifted mean
+    b = np.random.normal(3, 1, 1000)  # Mean shifted by 3
     psi = psi_numeric(a, b)
-    assert psi > 0.2, "PSI should be high for different distribution"
+    assert psi > 0.2, f"Expected high PSI, got {psi}"
+
+def test_categorical_drift():
+    """Changed category frequencies → drift"""
+    ref = pd.Series(['A']*700 + ['B']*300)
+    cur = pd.Series(['A']*300 + ['B']*700)  # Flipped
+    psi = psi_categorical(ref, cur)
+    assert psi > 0.2, f"Expected drift, got PSI={psi}"
+
+def test_drift_decision():
+    """30% features drift → trigger"""
+    ref = pd.DataFrame({
+        'f1': np.random.normal(0, 1, 100),
+        'f2': np.random.normal(0, 1, 100),
+        'f3': np.random.normal(0, 1, 100),
+    })
+    cur = pd.DataFrame({
+        'f1': np.random.normal(3, 1, 100),  # Drifted
+        'f2': np.random.normal(0, 1, 100),  # Same
+        'f3': np.random.normal(0, 1, 100),  # Same
+    })
+    
+    trigger, summary = detect_drift(
+        ref, cur,
+        feature_psi_thresh=0.2,
+        ks_p_thresh=0.01,
+        drift_share_thresh=0.30,
+        pred_psi_thresh=0.2,
+        pred_col='pred_proba'
+    )
+    
+    # 1/3 = 33% features drifted → should trigger
+    assert trigger, "Should trigger with 33% drift"
+    assert summary['n_drifted'] >= 1
+```
+
+Run tests:
+```bash
+python -m pytest test_drift_detection.py -v
 ```
 
 ---
@@ -934,89 +1096,106 @@ def test_psi_with_drift():
 
 ### Planned Features
 
-- [ ] **Model performance monitoring**: Track accuracy, AUC over time
-- [ ] **Concept drift detection**: Separate feature drift from label drift
-- [ ] **Gradual retraining**: Retrain on blend of old + new data
+- [ ] **Model performance tracking**: Monitor actual accuracy/AUC in production
+- [ ] **Concept drift detection**: Separate feature drift from label shift
+- [ ] **Gradual retraining**: Blend old + new data with weights
 - [ ] **Multi-model comparison**: A/B test old vs retrained model
-- [ ] **Real-time streaming monitoring**: Monitor live prediction stream
-- [ ] **Drift explanations**: SHAP values for drifted predictions
-- [ ] **Alert routing**: Different alerts for different drift types
-- [ ] **Dashboard**: Real-time monitoring dashboard (Streamlit/Dash)
+- [ ] **Real-time streaming**: Monitor live prediction stream
+- [ ] **SHAP-based drift**: Explain which features contribute most to drift
+- [ ] **Alert routing**: Slack/email notifications on drift
+- [ ] **Dashboard**: Streamlit/Grafana dashboard for monitoring
+- [ ] **Rollback automation**: Auto-rollback if new model performs poorly
+- [ ] **Cost tracking**: Log retraining costs and model performance gains
 
 ---
 
 ## References
 
-### Documentation
-- [Evidently AI Documentation](https://docs.evidentlyai.com/)
-- [MLflow Tracking](https://mlflow.org/docs/latest/tracking.html)
-- [PSI (Population Stability Index)](https://mwburke.github.io/data%20science/2018/04/29/population-stability-index.html)
+### Statistical Methods
+- [Population Stability Index (PSI)](https://mwburke.github.io/data%20science/2018/04/29/population-stability-index.html)
+- [Kolmogorov-Smirnov Test](https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test)
+- [Chi-squared Test](https://en.wikipedia.org/wiki/Chi-squared_test)
 
-### Papers
-- Gama et al. (2014). "A Survey on Concept Drift Adaptation"
-- Žliobaitė (2010). "Learning under Concept Drift: An Overview"
+### MLOps Best Practices
+- [Continuous Training in Production](https://ml-ops.org/content/continuous-training)
+- [Model Monitoring](https://christophergs.com/machine%20learning/2020/03/14/how-to-monitor-machine-learning-models/)
 
 ### Related Components
-- [RAY HPO README](../RAY/README.md) - Training pipeline
-- [DEPLOY README](../DEPLOY/README.md) - Deployment pipeline
+- [RAY HPO README](../RAY/README.md) - Hyperparameter optimization
+- [DEPLOY README](../DEPLOY/README.md) - Model deployment
 - [Main README](../README.md) - Project overview
 
 ---
 
 ## Support
 
-### Getting Help
+### Debugging Commands
 
-1. **Check logs**:
-   ```bash
-   # Monitoring logs
-   cat code/MONITOR/monitoring/out/drift_summary_*.json
-   
-   # Retraining logs (if MLflow)
-   mlflow ui --backend-store-uri file:///.../mlruns
-   ```
+```bash
+# 1. Check drift summary
+cat code/MONITOR/monitoring/out/drift_summary_*.json | jq .
 
-2. **Verify configuration**:
-   ```bash
-   # Check paths exist
-   ls -la $(grep reference configs/monitoring.yaml | awk '{print $2}' | tr -d '"')
-   
-   # Test endpoint
-   curl -X GET http://localhost:5001/health
-   ```
+# 2. View drifted features only
+cat code/MONITOR/monitoring/out/drift_summary_*.json | \
+  jq '.details[] | select(.drift == true)'
 
-3. **Review thresholds**:
-   ```bash
-   # Check last drift report
-   jq . code/MONITOR/monitoring/out/drift_summary_*.json | tail -1
-   ```
+# 3. Check prediction scores
+head -20 code/MONITOR/monitoring/tmp/ref.csv
+head -20 code/MONITOR/monitoring/tmp/cur.csv
 
-4. **Debug prediction parsing**:
-   ```bash
-   # Test endpoint with sample data
-   python -c "
-   import requests, json
-   with open('data/X_train.csv') as f:
-       r = requests.post('http://localhost:5001/invocations',
-                        headers={'Content-Type': 'text/csv'},
-                        data=f.read())
-   print(json.dumps(r.json(), indent=2))
-   "
-   ```
+# 4. Test endpoint manually
+curl -X POST http://localhost:5001/invocations \
+  -H "Content-Type: text/csv" \
+  --data-binary @data/X_train.csv | head -20
+
+# 5. Check MLflow experiments
+mlflow ui --backend-store-uri file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns
+
+# 6. View recent drift reports
+ls -lht code/MONITOR/monitoring/out/
+
+# 7. Check if retraining succeeded
+ls -lht code/RAY/mlruns/*/meta.yaml
+```
 
 ---
 
-## Changelog
+## Quick Reference Card
 
-### Version 1.0 (Current)
-- ✅ Complete drift detection pipeline
-- ✅ Automated retraining orchestration
-- ✅ Three monitoring approaches (Evidently, Simple, Integrated)
-- ✅ Robust prediction parsing
-- ✅ MLflow integration
-- ✅ Docker rebuild automation
+```bash
+# Standard Usage
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/X_train.csv \
+  --current data/production.csv \
+  --endpoint http://localhost:5001/invocations \
+  --retrain-script code/RAY/ray_tune_xgboost.py
+
+# With Docker rebuild
+python code/MONITOR/monitor_and_retrain.py \
+  ... (above args) ... \
+  --tracking-uri file://.../RAY/mlruns \
+  --build-script code/DEPLOY/build_docker_image.py
+
+# Custom thresholds
+python code/MONITOR/monitor_and_retrain.py \
+  ... (above args) ... \
+  --feature-psi-thresh 0.25 \
+  --drift-share-thresh 0.40
+
+# Critical features
+python code/MONITOR/monitor_and_retrain.py \
+  ... (above args) ... \
+  --critical-cols "feat1,feat2" \
+  --critical-psi-thresh 0.3
+
+# Force retrain
+python code/MONITOR/monitor_and_retrain.py \
+  ... (above args) ... \
+  --force
+```
 
 ---
 
-**Questions?** Open an issue or check the main project [README](../README.md).
+**Questions?** Check the [main project README](../README.md) or open an issue.
 
+**Last Updated**: October 2025
