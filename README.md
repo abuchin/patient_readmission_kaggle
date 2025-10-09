@@ -23,15 +23,12 @@ patient_selection/
 │   │   ├── Dockerfile     # Container definition
 │   │   ├── model/         # Exported MLflow model
 │   │   └── README.md      # Deployment documentation
-│   ├── MONITOR/           # Model Monitoring & Drift Detection
-│   │   ├── scripts/       # Monitoring execution scripts
-│   │   │   └── run_monitor.py     # Main monitoring script
-│   │   ├── app/           # Logging utilities
-│   │   │   ├── log_utils.py       # Prediction logging
-│   │   │   └── logged_model.py    # MLflow wrapper with logging
-│   │   ├── configs/       # Configuration files
-│   │   │   └── monitoring.yaml    # Monitoring parameters
-│   │   └── reports/       # Generated drift reports
+│   ├── MONITOR/           # Automated Drift Detection & Retraining
+│   │   ├── monitor_and_retrain.py # Main drift detection + auto-retrain script
+│   │   ├── monitoring/    # Monitoring data
+│   │   │   ├── out/       # Drift summary JSON reports
+│   │   │   └── tmp/       # Temporary scoring files
+│   │   └── README.md      # MONITOR component documentation
 │   ├── requirements.txt   # Python dependencies
 │   └── README.md          # This file
 ├── data/
@@ -311,153 +308,169 @@ curl -X POST http://localhost:5001/invocations \
 
 ---
 
-### 4. MONITOR - Model Monitoring & Drift Detection
+### 4. MONITOR - Automated Drift Detection & Model Retraining
 
 **Location**: `code/MONITOR/`
 
-**Purpose**: Continuously monitor production model performance and detect data drift to ensure model reliability over time.
+**Purpose**: Automated drift detection and intelligent retraining orchestration. When data drift is detected, automatically triggers model retraining and optionally rebuilds deployment images.
 
-**Key Components**:
+**Key Innovation**: Unlike traditional monitoring that only alerts, this system **automatically fixes the problem** by retraining the model on fresh data.
 
-#### Prediction Logging (`app/log_utils.py` & `app/logged_model.py`)
-- **LoggedModel Wrapper**: MLflow PythonModel wrapper that automatically logs all predictions
-- **Prediction Capture**: Records input features, predictions, and timestamps
-- **Daily Aggregation**: Logs saved as daily Parquet files (`preds_YYYY-MM-DD.parquet`)
-- **Metadata Tracking**: Captures request metadata alongside predictions
+**Main Script**: `monitor_and_retrain.py` (350 lines)
 
-#### Monitoring Script (`scripts/run_monitor.py`)
-- **Framework**: Evidently AI for drift detection and model monitoring
-- **Reference Data**: Compares production data against training baseline
-- **Automated Reports**: Generates HTML and JSON reports for analysis
-- **MLflow Integration**: Logs all reports and metrics to MLflow tracking
+#### What It Does
 
-#### Drift Detection
-The monitoring system tracks multiple types of drift:
+The monitoring pipeline:
+1. ✅ **Scores both baseline and current data** through your deployed model endpoint
+2. ✅ **Computes drift metrics** using statistical tests (PSI, KS test)
+3. ✅ **Detects drift** in both features and predictions
+4. ✅ **Triggers automated retraining** when drift thresholds are exceeded
+5. ✅ **Rebuilds Docker images** after successful retraining (optional)
+6. ✅ **Logs all results** to JSON files for tracking
 
-**Data Drift**:
-- Detects changes in feature distributions using statistical tests
-- Monitors share of drifted features (threshold: 30% default)
-- Dataset-level p-value tracking (threshold: 0.05 default)
-- Feature-by-feature drift analysis
+#### Drift Detection Methods
 
-**Target Drift** (when labels available):
-- Monitors changes in prediction distribution
-- Compares actual vs predicted outcomes
-- Tracks label distribution shifts
+**PSI (Population Stability Index)**:
+```
+PSI = Σ (P_current - P_baseline) × ln(P_current / P_baseline)
 
-**Model Performance** (when labels available):
-- Classification metrics: precision, recall, F1-score, accuracy
-- Confusion matrix analysis
-- ROC-AUC and average precision tracking
-- Performance degradation alerts
-
-#### Configuration (`configs/monitoring.yaml`)
-```yaml
-mlflow_tracking_uri: "file://.../RAY/mlruns"
-mlflow_experiment: "MediWatch-Monitoring"
-
-paths:
-  reference: "/path/to/X_train.csv"     # Training baseline
-  logs_dir: "code/DEPLOY/logs"          # Production predictions
-  reports_out: "code/MONITOR/reports"   # Output reports
-
-drift_thresholds:
-  share_of_drifted_columns: 0.30        # Alert if 30%+ features drift
-  p_value: 0.05                         # Dataset-level significance
+Interpretation:
+- PSI < 0.1  : No significant change
+- PSI 0.1-0.2: Small change (monitor)
+- PSI 0.2-0.25: Moderate drift ⚠️
+- PSI > 0.25 : Significant drift (action required)
 ```
 
-#### Monitoring Workflow
+**KS Test (Kolmogorov-Smirnov)**:
+- Compares empirical cumulative distribution functions
+- Returns p-value (probability distributions are the same)
+- Threshold: p < 0.01 indicates significant difference
 
-**Step 1: Log Predictions in Production**
+**Multi-Gate Logic**:
 ```python
-from app.logged_model import LoggedModel
-import mlflow
-
-# Wrap your model with logging
-logged_model = LoggedModel()
-logged_model.load_context(context)
-
-# Predictions are automatically logged
-predictions = logged_model.predict(context, input_data)
+trigger_retrain = (
+    (share_of_drifted_features >= 30%) OR
+    (max_feature_psi >= 1.0) OR            # Any feature extreme drift
+    (critical_feature_drifts) OR            # Important features
+    (prediction_psi >= 0.2)                 # Model output shifts
+)
 ```
 
-**Step 2: Run Drift Detection**
+#### Key Features
+
+**Critical Features Monitoring**: Monitor key clinical features more strictly
 ```bash
-cd code/MONITOR/
-python scripts/run_monitor.py
+--critical-cols "number_inpatient,time_in_hospital"
+--critical-psi-thresh 0.3
 ```
 
-**Step 3: Review Reports**
-- HTML reports generated in `reports/` directory
-- JSON metrics for programmatic access
-- MLflow artifacts for historical tracking
+**Extreme Drift Gate**: Trigger if ANY single feature shows extreme drift
+```bash
+--any-feature-psi-thresh 0.5
+```
 
-#### Drift Alert System
-The monitoring script returns exit codes based on drift detection:
-- **Exit 0**: No drift detected (normal operation)
-- **Exit 2**: Drift alert triggered (requires attention)
+**Prediction Drift**: Double-check prediction distribution shifts
+```bash
+--pred-psi-thresh 0.2
+--pred-ks-p-thresh 0.01
+```
 
-Alert triggers:
-1. **Feature Drift**: ≥30% of features show significant drift
-2. **Dataset Drift**: Overall p-value < 0.05
-3. **Either condition** triggers retraining recommendation
+**Flexible Thresholds**: All thresholds are configurable
+- `--feature-psi-thresh 0.2` (feature drift)
+- `--drift-share-thresh 0.30` (30% features must drift)
+- `--ks-p-thresh 0.01` (KS test significance)
 
-#### Generated Reports
+#### Usage Example
 
-**Full Report** (`evidently_report_*.html`):
-- Comprehensive drift analysis
-- Feature-by-feature comparisons
-- Distribution visualizations
-- Statistical test results
+```bash
+python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/diabetic_data.csv \
+  --current data/diabetic_data_drift.csv \
+  --endpoint http://localhost:5001/invocations \
+  --retrain-script code/RAY/ray_tune_xgboost.py \
+  --tracking-uri file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns \
+  --build-script code/DEPLOY/build_docker_image.py \
+  --ignore-cols "encounter_id,patient_nbr" \
+  --critical-cols "number_inpatient" \
+  --hpo-num-samples 10
+```
 
-**Summary Report** (`evidently_summary_*.html`):
-- High-level drift metrics
-- Dataset-level statistics
-- Quick health check status
+#### Workflow
 
-**Drift Alert** (`drift_alert_*.json`):
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  Baseline   │────▶│   Score     │────▶│   Detect    │────▶│  Retrain    │
+│   Data      │     │   via API   │     │   Drift     │     │  + Deploy   │
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+       │                    │                    │                    │
+    baseline.csv        tmp/ref.csv         PSI + KS test      Ray Tune HPO
+       │                    │                    │                    │
+  Current Data         tmp/cur.csv         drift_summary.json    Docker Image
+```
+
+#### Output Files
+
+**Drift Summary JSON** (`monitoring/out/drift_summary_*.json`):
 ```json
 {
-  "alert": true/false,
-  "share": 0.35,
-  "p_value": 0.023,
-  "window": "2025-01-15"
+  "trigger_retrain": false,
+  "share_drifted": 0.0392,
+  "n_features": 51,
+  "n_drifted": 2,
+  "max_feature_psi": 0.0,
+  "pred_psi": 0.0,
+  "pred_gate": false,
+  "feature_psi_thresh": 0.2,
+  "ks_p_thresh": 0.01,
+  "drift_share_thresh": 0.3,
+  "details": [
+    {"column": "time_in_hospital", "type": "numeric", "psi": 0.0, "ks_p": 1.0, "drift": false},
+    {"column": "num_medications", "type": "numeric", "psi": 0.1234, "ks_p": 0.05, "drift": false},
+    ...
+  ]
 }
 ```
 
-#### Integration Points
+#### Integration with Pipeline
 
-**With DEPLOY**:
-- Reads prediction logs from deployed model
-- Monitors production inference data
-- Works with Docker containerized models
+**With EDA**: Uses training baseline as reference data  
+**With RAY**: Automatically triggers `ray_tune_xgboost.py` when drift detected  
+**With DEPLOY**: Rebuilds Docker images after successful retraining  
+**With MLflow**: Shares same tracking store for experiment continuity  
 
-**With RAY**:
-- Uses MLflow tracking from HPO experiments
-- Compares against training reference data
-- Triggers retraining when drift detected
+#### Scheduling Options
 
-**With MLflow**:
-- Logs all monitoring reports as artifacts
-- Tracks drift metrics over time
-- Maintains monitoring experiment history
+**Cron (Daily at 2 AM)**:
+```bash
+0 2 * * * cd /home/ec2-user/projects/patient_selection && \
+  python code/MONITOR/monitor_and_retrain.py \
+  --baseline data/diabetic_data.csv \
+  --current /tmp/production_data.csv \
+  --endpoint http://localhost:5001/invocations \
+  --retrain-script code/RAY/ray_tune_xgboost.py
+```
 
-#### Use Cases
+**Airflow DAG**:
+```python
+monitor_task = BashOperator(
+    task_id='monitor_and_retrain',
+    bash_command='python code/MONITOR/monitor_and_retrain.py ...'
+)
+```
 
-1. **Continuous Monitoring**: Schedule regular drift checks (daily/weekly)
-2. **Alert System**: Integrate with notification services (email, Slack)
-3. **Retraining Trigger**: Automatically initiate model retraining on drift
-4. **Model Governance**: Maintain audit trail of model performance
-5. **A/B Testing**: Compare model versions in production
+#### Advanced Features
 
-**Tools Used**: evidently, pandas, mlflow, pyyaml
+- **Critical features** with stricter thresholds
+- **Extreme drift** detection (any feature PSI > threshold)
+- **Prediction drift** with dual tests (PSI + KS)
+- **Column ignoring** (skip IDs, timestamps)
+- **Force retraining** mode (bypass drift checks)
+- **Fast retraining** (fewer HPO trials for emergencies)
+- **Robust prediction parsing** (handles various API formats)
 
-**Best Practices**:
-- Run monitoring at regular intervals (e.g., daily via cron/Airflow)
-- Set appropriate drift thresholds based on domain knowledge
-- Keep reference data representative of training distribution
-- Archive reports for compliance and auditing
-- Integrate alerts with incident management systems
+**Tools Used**: scipy (statistical tests), pandas, numpy, requests, subprocess
+
+**Documentation**: See [MONITOR/README.md](MONITOR/README.md) for complete usage guide (1,200+ lines).
 
 ---
 
@@ -493,6 +506,7 @@ diabetic_data.csv
     → Prediction logging (monitored)
     → Drift detection (Evidently reports)
     → [If drift detected] → Retrain model (back to RAY)
+
 ```
 
 **Continuous Feedback Loop**:
@@ -507,13 +521,15 @@ Production Data → MONITOR → Drift Detection
 ## Future Work
 
 The project is designed to be extended with:
-- **Airflow Orchestration**: Automated workflow scheduling and pipeline execution
-- **Automated Retraining**: Trigger model retraining automatically when drift is detected
-- **Real-time Dashboard**: Live monitoring dashboard for model performance and drift metrics
+- **Airflow Orchestration**: Automated workflow scheduling and pipeline execution (currently using cron/manual)
+- **Real-time Dashboard**: Live monitoring dashboard for model performance and drift metrics (Streamlit/Grafana)
 - **HuggingFace Deployment**: Alternative deployment platform for wider accessibility
 - **Web Interface**: LLM-powered chatbot for dataset queries and explanations
 - **A/B Testing Framework**: Advanced comparison of model versions in production
 - **Feature Store**: Centralized feature engineering and storage
+- **Model Performance Monitoring**: Track actual accuracy/AUC in production (currently only drift detection)
+- **Concept Drift Detection**: Separate feature drift from label shift analysis
+- **SHAP-based Drift**: Explain which features contribute most to drift
 
 ## Requirements
 
@@ -546,10 +562,10 @@ The project requires Python 3.11+ and the following libraries:
 - numpy >= 2.3.0
 
 #### MONITOR Component
-- evidently >= 0.4.0
+- scipy >= 1.16.0 (statistical tests: KS, PSI)
 - pandas >= 1.3.0
-- mlflow >= 1.20.0
-- pyyaml >= 5.4
+- numpy >= 1.21.0
+- requests >= 2.25.0 (API communication)
 
 ### Installation
 
@@ -837,6 +853,7 @@ The main dataset should be located at:
    cat code/MONITOR/reports/drift_alert_*.json
    ```
 
+
 ## Project Milestones
 
 - [x] **Phase 1**: Exploratory Data Analysis
@@ -858,18 +875,20 @@ The main dataset should be located at:
   - [x] REST API endpoints
   - [x] Deployment automation script
 
-- [x] **Phase 4**: Model Monitoring
-  - [x] Prediction logging system
-  - [x] Drift detection with Evidently
-  - [x] Automated report generation
-  - [x] MLflow monitoring integration
-  - [x] Alert system for drift detection
+- [x] **Phase 4**: Model Monitoring & Automated Retraining
+  - [x] Automated drift detection (PSI, KS test)
+  - [x] Feature-level and prediction-level drift analysis
+  - [x] Multi-gate drift logic (critical features, extreme drift)
+  - [x] Automated retraining pipeline triggered by drift
+  - [x] Docker image rebuild after retraining
+  - [x] JSON drift reports for tracking
+  - [x] Integration with Ray Tune HPO
 
 - [ ] **Phase 5**: Production Enhancement (Future)
   - [ ] Airflow orchestration for automated workflows
-  - [ ] Automated retraining pipeline triggered by drift
+  - [ ] Real-time monitoring dashboard (Streamlit/Grafana)
+  - [ ] Model performance tracking (accuracy, AUC over time)
   - [ ] Advanced A/B testing framework
-  - [ ] Real-time monitoring dashboard
 
 - [ ] **Phase 6**: User Interface (Future)
   - [ ] Web application
