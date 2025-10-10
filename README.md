@@ -4,6 +4,9 @@
 
 This project aims to create a machine learning model that can predict whether a given patient will be readmitted to the hospital based on collected patient data. The model will be tuned using Ray, orchestrated using Airflow, and deployed on HuggingFace. Additionally, it will be connected to a website where users can ask questions about the dataset and get answers from an LLM.
 
+## Detailed description
+https://docs.google.com/document/d/1WmBA18F_3HDC5_bm-lsKuL9ZWlZT92M2uA5EJ-tV2s4/edit?usp=sharing
+
 ## Project Structure
 
 ```
