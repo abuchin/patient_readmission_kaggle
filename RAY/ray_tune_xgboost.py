@@ -12,13 +12,14 @@ Large-scale HPO with Ray Tune + MLflow on the diabetic readmission dataset.
 - Ray results directory: ./ray_exp
 
 Usage:
-    python run_hpo_xgb.py --data /home/ec2-user/projects/patient_selection/data/diabetic_data.csv \
-                          --num-samples 50 --gpus-per-trial 0 --cpus-per-trial 4
+    python ray_tune_xgboost.py --data ../../data/diabetic_data.csv \
+                               --num-samples 50 --gpus-per-trial 0 --cpus-per-trial 4
 """
 
 import os
 import json
 import argparse
+from pathlib import Path
 import numpy as np
 import pandas as pd
 
@@ -175,9 +176,14 @@ def main():
     parser.add_argument("--cpus-per-trial", type=int, default=2)
     parser.add_argument("--gpus-per-trial", type=float, default=0.0)
     parser.add_argument("--ray-dir", type=str, default="ray_exp", help="Directory for Ray Tune outputs")
+    
+    # Compute default mlruns directory relative to this script
+    THIS_DIR = Path(__file__).resolve().parent
+    DEFAULT_MLRUNS = str(THIS_DIR / "mlruns")
+    
     parser.add_argument("--mlruns-dir", type=str,
-                        default="/home/ec2-user/projects/patient_selection/code/RAY/mlruns",
-                        help="Absolute path for MLflow backend store")
+                        default=DEFAULT_MLRUNS,
+                        help="Path for MLflow backend store (default: ./mlruns relative to script)")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 

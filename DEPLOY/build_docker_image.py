@@ -5,11 +5,16 @@ import argparse
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 import mlflow
 from mlflow.tracking import MlflowClient
 
-DEFAULT_MLFLOW_URI = "file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns"
+# Compute default MLflow URI relative to this script's location
+# DEPLOY/ -> code/ -> RAY/mlruns
+THIS_DIR = Path(__file__).resolve().parent
+CODE_DIR = THIS_DIR.parent
+DEFAULT_MLFLOW_URI = f"file:{CODE_DIR / 'RAY' / 'mlruns'}"
 DEFAULT_EXP_NAME = "xgb_diabetic_readmission_hpo"
 DEFAULT_OUT_DIR = "./model"
 DEFAULT_IMAGE_TAG = "diabetic-xgb:serve"
