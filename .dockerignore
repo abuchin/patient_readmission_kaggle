@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.tmp
+.venv/
+patient_env/
+.env
+.git/
+ray_exp/
+monitoring/tmp/
+data/
+
