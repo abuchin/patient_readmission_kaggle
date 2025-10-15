@@ -71,11 +71,14 @@ python ray_tune_xgboost.py --data /path/to/diabetic_data.csv
 
 ## Usage using docker
 
+In this case we will use docker image and mount the data to the directory to make it findable.
+
 ```bash
 docker run --rm -it \
   -v "$PWD":/work -w /work \
+  -v /home/ec2-user/projects/patient_selection/data:/data:ro \
   abuchin/patient-env:1 \
-  python ray_tune_xgboost.py --data /work/diabetic_data.csv
+  python RAY/ray_tune_xgboost.py --data /data/diabetic_data.csv
 ```
 
 ### Advanced Usage
