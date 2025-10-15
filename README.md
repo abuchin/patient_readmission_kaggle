@@ -32,6 +32,13 @@ patient_selection/
 │   │   │   ├── out/       # Drift summary JSON reports
 │   │   │   └── tmp/       # Temporary scoring files
 │   │   └── README.md      # MONITOR component documentation
+│   ├── airflow/           # Pipeline Orchestration
+│   │   ├── dags/          # Airflow DAG definitions
+│   │   │   └── deploy_monitor_dag.py  # Deploy + Monitor DAGs
+│   │   ├── docker-compose.yaml  # Airflow services setup
+│   │   ├── Dockerfile     # Custom Airflow image
+│   │   ├── set_airflow_env.sh   # Environment configuration
+│   │   └── README.md      # Airflow setup guide
 │   ├── requirements.txt   # Python dependencies
 │   └── README.md          # This file
 ├── data/
@@ -477,6 +484,259 @@ monitor_task = BashOperator(
 
 ---
 
+### 5. AIRFLOW - Pipeline Orchestration & Automation
+
+**Location**: `code/airflow/`
+
+**Purpose**: Automate and orchestrate the entire ML pipeline using Apache Airflow. Provides scheduled execution of deployment and monitoring tasks with dependency management, logging, and failure handling.
+
+**Key Innovation**: Transforms manual pipeline steps into automated, scheduled workflows with proper dependency management and monitoring.
+
+#### Components
+
+```
+airflow/
+├── dags/
+│   └── deploy_monitor_dag.py    # Airflow DAG definitions (95 lines)
+├── config/
+│   └── airflow.cfg               # Airflow configuration
+├── docker-compose.yaml           # Multi-container Airflow setup (295 lines)
+├── Dockerfile                    # Custom Airflow image with project deps
+├── set_airflow_env.sh            # Environment setup script
+├── requirements.txt              # Airflow dependencies
+└── README.md                     # Airflow setup instructions
+```
+
+#### DAGs (Directed Acyclic Graphs)
+
+**1. Deploy on Start** (`deploy_on_start`)
+- **Schedule**: `@once` (runs once when Airflow starts)
+- **Purpose**: Initial model deployment
+- **Task**: Executes `DEPLOY/build_docker_image.py`
+- **Output**: Exports best model from MLflow and optionally builds Docker image
+
+**2. Monitor and Retrain** (`monitor_and_retrain`)
+- **Schedule**: Daily at 02:00 UTC (`0 2 * * *`)
+- **Purpose**: Automated drift detection and retraining
+- **Task**: Executes `MONITOR/monitor_and_retrain.py`
+- **Features**:
+  - Checks for data drift
+  - Automatically retrains if drift detected
+  - Rebuilds Docker images after retraining
+  - Prevents concurrent runs (`max_active_runs=1`)
+
+#### Docker Compose Architecture
+
+**Services**:
+- **postgres**: PostgreSQL database for Airflow metadata
+- **airflow-apiserver**: REST API server (port 8080)
+- **airflow-scheduler**: Task scheduler and executor
+- **airflow-dag-processor**: DAG file processor
+- **airflow-triggerer**: Event-triggered task handler
+- **flower** (optional): Celery monitoring UI (port 5555)
+
+**Executor**: LocalExecutor (suitable for single-machine deployment)
+
+#### Setup & Usage
+
+**1. Generate Environment File**:
+```bash
+cd code/airflow
+bash set_airflow_env.sh
+```
+
+This creates `.env` with:
+- Admin credentials (username/password)
+- MLflow tracking URI
+- Project root path
+- Optional secrets (AWS, Docker, HuggingFace, GitHub)
+
+**2. Start Airflow**:
+```bash
+cd code
+AIRFLOW_PROJ_DIR=$(pwd) docker-compose --env-file airflow/.env -f airflow/docker-compose.yaml up -d
+```
+
+**3. Access Airflow UI**:
+- URL: http://localhost:8080
+- Default credentials: `airflow` / `airflow`
+
+**4. Stop Airflow**:
+```bash
+docker-compose -f airflow/docker-compose.yaml down
+```
+
+#### Volume Mounts
+
+The Docker Compose setup mounts:
+- `./dags` → `/opt/airflow/dags` (DAG definitions)
+- `./logs` → `/opt/airflow/logs` (Airflow logs)
+- `./config` → `/opt/airflow/config` (Configuration files)
+- `./` → `/opt/airflow/project` (Entire project for script access)
+
+#### DAG Configuration
+
+**Deploy DAG** (`deploy_monitor_dag.py` lines 41-61):
+```python
+with DAG(
+    dag_id="deploy_on_start",
+    schedule="@once",
+    start_date=datetime(2025, 10, 1),
+    catchup=False,
+    tags=["deploy"],
+) as deploy_dag:
+    # Runs DEPLOY/build_docker_image.py
+    deploy_task = PythonOperator(...)
+```
+
+**Monitor DAG** (`deploy_monitor_dag.py` lines 64-94):
+```python
+with DAG(
+    dag_id="monitor_and_retrain",
+    schedule="0 2 * * *",  # Daily at 02:00 UTC
+    start_date=datetime(2025, 10, 1),
+    catchup=False,
+    max_active_runs=1,
+    tags=["monitor"],
+) as monitor_dag:
+    # Runs MONITOR/monitor_and_retrain.py
+    monitor_task = PythonOperator(...)
+```
+
+#### Environment Variables
+
+Set in `.env` file (created by `set_airflow_env.sh`):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `_AIRFLOW_WWW_USER_USERNAME` | `airflow` | Web UI admin username |
+| `_AIRFLOW_WWW_USER_PASSWORD` | `airflow` | Web UI admin password |
+| `AIRFLOW_PROJ_DIR` | `$(pwd)` | Project root for mounting |
+| `MLFLOW_TRACKING_URI` | `file:/opt/airflow/project/RAY/mlruns` | MLflow backend |
+| `MONITOR_ENDPOINT` | `http://localhost:5001/invocations` | Model serving endpoint |
+| `PROJECT_ROOT` | `/opt/airflow/project` | Mounted project location |
+
+#### Integration with Pipeline
+
+**With RAY**: 
+- Monitor DAG triggers `ray_tune_xgboost.py` when drift detected
+- Inherits MLflow tracking URI from environment
+
+**With DEPLOY**: 
+- Deploy DAG runs `build_docker_image.py` on startup
+- Monitor DAG rebuilds images after retraining
+- Uses same MLflow tracking store
+
+**With MONITOR**: 
+- Executes `monitor_and_retrain.py` on daily schedule
+- Passes baseline/current data paths
+- Configures drift thresholds via DAG parameters
+
+#### Customization
+
+Edit `dags/deploy_monitor_dag.py` to:
+- Change schedules (e.g., hourly, weekly)
+- Add email alerts on failure
+- Add Slack notifications
+- Chain multiple tasks
+- Add custom operators
+
+**Example**: Email on failure
+```python
+DEFAULT_ARGS = {
+    "owner": "airflow",
+    "email": ["alerts@example.com"],
+    "email_on_failure": True,
+    "retries": 1,
+}
+```
+
+#### Monitoring Airflow
+
+**Check DAG Status**:
+```bash
+# View running containers
+docker-compose -f airflow/docker-compose.yaml ps
+
+# Check scheduler logs
+docker-compose -f airflow/docker-compose.yaml logs airflow-scheduler
+
+# Check webserver logs
+docker-compose -f airflow/docker-compose.yaml logs airflow-apiserver
+```
+
+**CLI Commands** (inside container):
+```bash
+# List DAGs
+docker-compose -f airflow/docker-compose.yaml exec airflow-scheduler airflow dags list
+
+# Trigger DAG manually
+docker-compose -f airflow/docker-compose.yaml exec airflow-scheduler \
+  airflow dags trigger monitor_and_retrain
+
+# Check DAG run status
+docker-compose -f airflow/docker-compose.yaml exec airflow-scheduler \
+  airflow dags list-runs -d monitor_and_retrain
+```
+
+#### Advantages of Airflow Orchestration
+
+✅ **Automated Scheduling**: No manual cron jobs  
+✅ **Dependency Management**: Tasks run in correct order  
+✅ **Failure Handling**: Automatic retries and alerts  
+✅ **Logging**: Centralized logs for all tasks  
+✅ **Monitoring**: Web UI for pipeline visualization  
+✅ **Scalability**: Can distribute tasks across workers  
+✅ **Version Control**: DAGs are Python code in git  
+
+#### Resource Requirements
+
+**Minimum**:
+- 4GB RAM
+- 2 CPUs
+- 10GB disk space
+
+**Recommended**:
+- 8GB RAM
+- 4+ CPUs
+- 50GB disk space (for logs and MLflow artifacts)
+
+#### Troubleshooting
+
+**DAGs not appearing**:
+```bash
+# Check DAG files are mounted
+docker-compose -f airflow/docker-compose.yaml exec airflow-scheduler ls -la /opt/airflow/dags
+
+# Check for Python errors
+docker-compose -f airflow/docker-compose.yaml exec airflow-scheduler \
+  airflow dags list-import-errors
+```
+
+**Project scripts not found**:
+```bash
+# Verify project is mounted
+docker-compose -f airflow/docker-compose.yaml exec airflow-scheduler ls -la /opt/airflow/project
+
+# Check PROJECT_ROOT environment variable
+docker-compose -f airflow/docker-compose.yaml exec airflow-scheduler env | grep PROJECT_ROOT
+```
+
+**Database connection errors**:
+```bash
+# Restart postgres
+docker-compose -f airflow/docker-compose.yaml restart postgres
+
+# Check postgres health
+docker-compose -f airflow/docker-compose.yaml ps postgres
+```
+
+**Tools Used**: apache-airflow 3.0.1, postgresql, docker-compose
+
+**Documentation**: See [airflow/README.md](airflow/README.md) for detailed setup instructions.
+
+---
+
 ## Pipeline Overview
 
 The complete ML pipeline follows these stages:
@@ -496,6 +756,10 @@ The complete ML pipeline follows these stages:
 4. MONITOR (Observability)
    └─> Track predictions, detect drift, monitor performance
        └─> Alert on drift → Trigger retraining
+       
+5. AIRFLOW (Orchestration)
+   └─> Automate deployment and monitoring workflows
+       └─> Schedule: Deploy @once, Monitor daily
 ```
 
 **Data Flow**:
@@ -504,27 +768,37 @@ diabetic_data.csv
     → EDA analysis 
     → Ray Tune HPO (best hyperparameters)
     → MLflow tracking (best model saved)
-    → Docker export (model packaged)
-    → REST API (predictions served)
-    → Prediction logging (monitored)
-    → Drift detection (Evidently reports)
-    → [If drift detected] → Retrain model (back to RAY)
-
+    → Docker export (model packaged)                    ┌─────────────────┐
+    → REST API (predictions served)                     │                 │
+    → Prediction logging (monitored)                    │    AIRFLOW      │
+    → Drift detection (statistical tests)               │  Orchestration  │
+    → [If drift detected] → Retrain model (back to RAY) │   Scheduler     │
+                                                        │                 │
+                                                        └─────────────────┘
+                                                          @once | Daily
 ```
 
-**Continuous Feedback Loop**:
+**Continuous Feedback Loop** (Orchestrated by Airflow):
 ```
+                    ┌─────────────────────────────────┐
+                    │   AIRFLOW Orchestration         │
+                    │   - Deploy DAG (@once)          │
+                    │   - Monitor DAG (daily 02:00)   │
+                    └───────────┬─────────────────────┘
+                                ↓
 Production Data → MONITOR → Drift Detection
                                ↓ (if drift)
                           Retrain Signal
                                ↓
                   RAY (HPO) → DEPLOY → Production
+                               ↑
+                               │ (rebuild image)
+                     AIRFLOW automates this loop
 ```
 
 ## Future Work
 
 The project is designed to be extended with:
-- **Airflow Orchestration**: Automated workflow scheduling and pipeline execution (currently using cron/manual)
 - **Real-time Dashboard**: Live monitoring dashboard for model performance and drift metrics (Streamlit/Grafana)
 - **HuggingFace Deployment**: Alternative deployment platform for wider accessibility
 - **Web Interface**: LLM-powered chatbot for dataset queries and explanations
@@ -1063,13 +1337,21 @@ The main dataset should be located at:
   - [x] JSON drift reports for tracking
   - [x] Integration with Ray Tune HPO
 
-- [ ] **Phase 5**: Production Enhancement (Future)
-  - [ ] Airflow orchestration for automated workflows
+- [x] **Phase 5**: Pipeline Orchestration
+  - [x] Airflow setup with Docker Compose
+  - [x] Deploy DAG (runs once on startup)
+  - [x] Monitor DAG (daily scheduled drift detection)
+  - [x] Automated task dependency management
+  - [x] Web UI for pipeline monitoring
+  - [x] Environment configuration management
+
+- [ ] **Phase 6**: Production Enhancement (Future)
   - [ ] Real-time monitoring dashboard (Streamlit/Grafana)
   - [ ] Model performance tracking (accuracy, AUC over time)
   - [ ] Advanced A/B testing framework
+  - [ ] Distributed Airflow with CeleryExecutor
 
-- [ ] **Phase 6**: User Interface (Future)
+- [ ] **Phase 7**: User Interface (Future)
   - [ ] Web application
   - [ ] LLM-powered chatbot
   - [ ] Interactive predictions
