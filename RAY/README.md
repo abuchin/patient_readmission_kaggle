@@ -69,6 +69,15 @@ optuna>=3.0.0
 python ray_tune_xgboost.py --data /path/to/diabetic_data.csv
 ```
 
+## Usage using docker
+
+```bash
+docker run --rm -it \
+  -v "$PWD":/work -w /work \
+  abuchin/patient-env:1 \
+  python ray_tune_xgboost.py --data /work/diabetic_data.csv
+```
+
 ### Advanced Usage
 
 ```bash
