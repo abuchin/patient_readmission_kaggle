@@ -624,8 +624,10 @@ Mount only your code directory and reference data within the mounted volume:
 ```bash
 docker run --rm -it \
   -v "$PWD":/work -w /work \
+  -v "$(realpath ../data)":/data:ro \
+  -e MLFLOW_TRACKING_URI=file:/work/RAY/mlruns \
   abuchin/patient-env:1 \
-  python RAY/ray_tune_xgboost.py --data /work/path/to/diabetic_data.csv
+  python RAY/ray_tune_xgboost.py --data /data/diabetic_data.csv
 ```
 
 **Usage Pattern**:
@@ -740,11 +742,12 @@ Then access the notebook at `http://localhost:8888` (check terminal for token).
 
 4. **Resource Limits** (Optional):
    ```bash
-   docker run --rm -it \
-     --cpus="4" --memory="8g" \
-     -v "$PWD":/work -w /work \
-     abuchin/patient-env:1 \
-     python RAY/ray_tune_xgboost.py --data /work/data/diabetic_data.csv
+docker run --rm -it \
+  -v "$PWD":/work -w /work \
+  -v "$PWD/output:/home/appuser/ray_results" \
+  -v "$(realpath ../data)":/data:ro \
+  abuchin/patient-env:1 \
+  python RAY/ray_tune_xgboost.py --data /data/diabetic_data.csv
    ```
 
 ### Troubleshooting Docker
