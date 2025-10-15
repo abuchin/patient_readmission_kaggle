@@ -596,8 +596,181 @@ pip install ray[tune] xgboost scikit-learn mlflow optuna
 pip install mlflow xgboost scikit-learn docker
 
 # For MONITOR
-pip install evidently pandas mlflow pyyaml
+pip install scipy pandas numpy requests
 ```
+
+## Running with Docker
+
+For a containerized environment with all dependencies pre-installed, you can use the provided Docker image. This is especially useful for reproducible environments across different systems.
+
+### Docker Setup
+
+#### 1. Login and Pull the Image
+
+```bash
+# Login to Docker Hub (if required)
+docker login
+
+# Pull the pre-built environment image
+docker pull abuchin/patient-env:1
+```
+
+### Running Components with Docker
+
+#### Option 1: Code Only (Self-Contained)
+
+Mount only your code directory and reference data within the mounted volume:
+
+```bash
+docker run --rm -it \
+  -v "$PWD":/work -w /work \
+  abuchin/patient-env:1 \
+  python RAY/ray_tune_xgboost.py --data /work/path/to/diabetic_data.csv
+```
+
+**Usage Pattern**:
+- `-v "$PWD":/work` - Mounts current directory to `/work` in container
+- `-w /work` - Sets working directory inside container
+- `--data /work/...` - References data inside the mounted volume
+
+#### Option 2: Code + External Data Directory (Recommended)
+
+Mount your code and data separately (data as read-only):
+
+```bash
+docker run --rm -it \
+  -v "$PWD":/work -w /work \
+  -v /home/ec2-user/projects/patient_selection/data:/data:ro \
+  abuchin/patient-env:1 \
+  python RAY/ray_tune_xgboost.py --data /data/diabetic_data.csv
+```
+
+**Usage Pattern**:
+- `-v "$PWD":/work` - Mounts code directory
+- `-v /path/to/data:/data:ro` - Mounts data directory read-only (`:ro`)
+- `--data /data/...` - References data in the mounted data directory
+
+### Docker Usage Examples
+
+#### Running RAY Hyperparameter Optimization
+
+```bash
+# From the code directory
+cd /path/to/patient_selection/patient_readmission_kaggle
+
+docker run --rm -it \
+  -v "$PWD":/work -w /work \
+  -v /path/to/data:/data:ro \
+  abuchin/patient-env:1 \
+  python RAY/ray_tune_xgboost.py \
+    --data /data/diabetic_data.csv \
+    --num-samples 30 \
+    --cpus-per-trial 2
+```
+
+#### Running with Custom Parameters
+
+```bash
+docker run --rm -it \
+  -v "$PWD":/work -w /work \
+  -v /home/ec2-user/projects/patient_selection/data:/data:ro \
+  abuchin/patient-env:1 \
+  python RAY/ray_tune_xgboost.py \
+    --data /data/diabetic_data.csv \
+    --num-samples 50 \
+    --cpus-per-trial 4 \
+    --test-size 0.2 \
+    --ray-dir ray_exp \
+    --seed 42
+```
+
+#### Running Jupyter Notebook in Docker
+
+```bash
+docker run --rm -it \
+  -v "$PWD":/work -w /work \
+  -v /home/ec2-user/projects/patient_selection/data:/data:ro \
+  -p 8888:8888 \
+  abuchin/patient-env:1 \
+  jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root
+```
+
+Then access the notebook at `http://localhost:8888` (check terminal for token).
+
+### Docker Command Breakdown
+
+| Flag | Purpose |
+|------|---------|
+| `--rm` | Automatically remove container when it exits |
+| `-it` | Interactive terminal (combine `-i` and `-t`) |
+| `-v "$PWD":/work` | Mount current directory to `/work` |
+| `-w /work` | Set working directory inside container |
+| `-v /path:/data:ro` | Mount data directory as read-only |
+| `-p 8888:8888` | Port forwarding (host:container) |
+| `abuchin/patient-env:1` | Docker image name and tag |
+
+### Advantages of Docker Approach
+
+✅ **Reproducibility**: Identical environment across all systems  
+✅ **Isolation**: No conflicts with system packages  
+✅ **Portability**: Works on Windows, Linux, macOS  
+✅ **Easy Setup**: No manual dependency installation  
+✅ **Version Control**: Tagged images ensure consistency  
+
+### Docker Best Practices
+
+1. **Use Read-Only Mounts for Data**: 
+   ```bash
+   -v /path/to/data:/data:ro
+   ```
+   Prevents accidental data modification.
+
+2. **Mount Code as Editable**:
+   ```bash
+   -v "$PWD":/work
+   ```
+   See code changes immediately without rebuilding.
+
+3. **Preserve Output Directories**:
+   Ensure MLflow runs, Ray results, and models are saved inside mounted volumes:
+   ```bash
+   # Results will persist in your local directory
+   python RAY/ray_tune_xgboost.py --ray-dir /work/ray_exp --mlruns-dir /work/mlruns
+   ```
+
+4. **Resource Limits** (Optional):
+   ```bash
+   docker run --rm -it \
+     --cpus="4" --memory="8g" \
+     -v "$PWD":/work -w /work \
+     abuchin/patient-env:1 \
+     python RAY/ray_tune_xgboost.py --data /work/data/diabetic_data.csv
+   ```
+
+### Troubleshooting Docker
+
+**Issue**: Permission denied errors  
+**Solution**: Run with user mapping:
+```bash
+docker run --rm -it --user $(id -u):$(id -g) \
+  -v "$PWD":/work -w /work \
+  abuchin/patient-env:1 \
+  python RAY/ray_tune_xgboost.py --data /work/data/file.csv
+```
+
+**Issue**: Cannot access files created by Docker  
+**Solution**: Fix permissions after running:
+```bash
+sudo chown -R $USER:$USER ray_exp mlruns
+```
+
+**Issue**: Out of disk space  
+**Solution**: Clean up Docker resources:
+```bash
+docker system prune -a
+```
+
+---
 
 ## Getting Started
 
