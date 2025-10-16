@@ -58,6 +58,406 @@ Production Data → MONITOR (drift detection)
 
 ---
 
+## Architecture
+
+### System Overview
+
+The system follows a modular architecture with five main components that work together to create a complete ML lifecycle:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                         AIRFLOW ORCHESTRATION                          │
+│                    (Scheduler, DAGs, Task Manager)                     │
+│                                                                        │
+│  ┌─────────────┐           ┌──────────────────────────┐              │
+│  │ Deploy DAG  │  (@once)  │   Monitor & Retrain DAG  │ (daily 02:00)│
+│  └─────────────┘           └──────────────────────────┘              │
+└────────────────────────────────────────────────────────────────────────┘
+           │                              │
+           │ triggers                     │ triggers
+           ↓                              ↓
+    ┌──────────────┐            ┌─────────────────┐
+    │   DEPLOY     │            │    MONITOR      │
+    │  Component   │            │   Component     │
+    └──────────────┘            └─────────────────┘
+           ↑                              │
+           │                              │ (if drift)
+           │                              ↓
+           │                    ┌─────────────────┐
+           │                    │      RAY        │
+           └────────────────────│   Component     │
+                 (rebuild)      └─────────────────┘
+                                         ↑
+                                         │ (training data)
+                                         │
+                                ┌─────────────────┐
+                                │      EDA        │
+                                │   Component     │
+                                └─────────────────┘
+
+                    ┌────────────────────────────┐
+                    │   MLflow Tracking Store    │
+                    │  (Shared Experiment Data)  │
+                    └────────────────────────────┘
+                              ↑
+                    (all components log here)
+```
+
+### Data Flow Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           DATA FLOW PIPELINE                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+1. TRAINING PHASE
+   ────────────────
+
+   diabetic_data.csv
+         │
+         ↓
+   ┌───────────────────┐
+   │   EDA Component   │  • Data exploration
+   │   (Notebook)      │  • Feature analysis
+   └───────────────────┘  • Baseline modeling
+         │
+         │ insights & preprocessed data
+         ↓
+   ┌───────────────────┐
+   │   RAY Component   │  • Hyperparameter search (Ray Tune)
+   │  (ray_tune_xgb.py)│  • 5-fold cross-validation
+   └───────────────────┘  • Multiple trials (30-50)
+         │
+         │ best hyperparameters + trained model
+         ↓
+   ┌───────────────────┐
+   │  MLflow Tracking  │  • Experiment logs
+   │      Store        │  • Model artifacts
+   └───────────────────┘  • Hyperparameters & metrics
+         │
+         │ best model retrieval
+         ↓
+
+2. DEPLOYMENT PHASE
+   ────────────────
+
+   ┌───────────────────┐
+   │ DEPLOY Component  │  • Export best model
+   │(build_docker.py)  │  • Generate Dockerfile
+   └───────────────────┘  • Build Docker image
+         │
+         │ Docker image with model + dependencies
+         ↓
+   ┌───────────────────┐
+   │  Docker Container │  • MLflow model serving
+   │   (Port 5001)     │  • REST API endpoints
+   └───────────────────┘  • /invocations, /health
+         │
+         │ prediction requests (JSON/CSV)
+         ↓
+   ┌───────────────────┐
+   │  Client/User      │  • Send patient data
+   │  Application      │  • Receive predictions
+   └───────────────────┘
+
+3. MONITORING PHASE
+   ─────────────────
+
+   production_data.csv + baseline_data.csv
+         │
+         ↓
+   ┌───────────────────┐
+   │ MONITOR Component │  • Score data via API
+   │(monitor_retrain.py│  • Compute PSI & KS tests
+   └───────────────────┘  • Detect feature/prediction drift
+         │
+         ├─ NO DRIFT → Continue monitoring
+         │
+         └─ DRIFT DETECTED
+               │
+               ↓
+         ┌───────────────────┐
+         │  Trigger Retrain  │  • Call RAY component
+         │   (subprocess)    │  • New HPO with fresh data
+         └───────────────────┘
+               │
+               │ new best model
+               ↓
+         ┌───────────────────┐
+         │ Rebuild & Deploy  │  • Call DEPLOY component
+         │   (subprocess)    │  • New Docker image
+         └───────────────────┘
+               │
+               ↓
+         Updated Production Model
+```
+
+### Component Interactions
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        COMPONENT COMMUNICATION                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+EDA Component
+  └─→ Outputs: Cleaned data understanding, feature insights
+      └─→ Consumed by: RAY (informs preprocessing strategy)
+
+RAY Component
+  ├─→ Inputs: diabetic_data.csv, preprocessing config
+  ├─→ Process: Ray Tune (parallel HPO), XGBoost training, CV evaluation
+  ├─→ Outputs: Best model + config → MLflow
+  └─→ Consumed by: DEPLOY (retrieves best model)
+
+MLflow Tracking Store (Shared Knowledge Base)
+  ├─→ Written by: RAY (experiments), MONITOR (drift logs)
+  ├─→ Read by: DEPLOY (best model), MONITOR (model endpoint)
+  └─→ Storage: File system (mlruns/) or Remote Server
+
+DEPLOY Component
+  ├─→ Inputs: MLflow tracking URI, experiment name
+  ├─→ Process: Export model, generate Dockerfile, build image
+  ├─→ Outputs: Docker container serving REST API
+  └─→ Consumed by: MONITOR (prediction endpoint), Clients (predictions)
+
+MONITOR Component
+  ├─→ Inputs: Baseline data, current data, model endpoint
+  ├─→ Process: Score data, compute drift (PSI, KS), evaluate thresholds
+  ├─→ Decision Logic:
+  │     IF drift_detected:
+  │        └─→ Call RAY (retrain)
+  │        └─→ Call DEPLOY (rebuild)
+  │     ELSE:
+  │        └─→ Log "no drift" and continue
+  └─→ Outputs: Drift reports (JSON), retraining trigger
+
+AIRFLOW Orchestration
+  ├─→ Deploy DAG (@once):
+  │     └─→ Task: Run DEPLOY/build_docker_image.py
+  │
+  └─→ Monitor DAG (daily 02:00):
+        └─→ Task: Run MONITOR/monitor_and_retrain.py
+              ├─→ Internally calls RAY if drift
+              └─→ Internally calls DEPLOY if retraining succeeds
+```
+
+### Data Transformations
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      DATA TRANSFORMATION PIPELINE                       │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Raw CSV Data
+  │
+  │ [diabetic_data.csv: ~100K rows × 50+ columns]
+  │
+  ↓
+┌─────────────────────────┐
+│ EDA: Data Understanding │
+└─────────────────────────┘
+  │ • Handle missing values → "Unknown/Invalid"
+  │ • Analyze distributions
+  │ • Identify feature types (numeric vs categorical)
+  │
+  ↓
+Preprocessed Data Insights
+  │
+  ↓
+┌─────────────────────────┐
+│  RAY: Feature Pipeline  │
+└─────────────────────────┘
+  │ • Target encoding: (<30, >30) → YES, (NO) → NO
+  │ • Numeric features → StandardScaler (mean=0, std=1)
+  │ • Categorical features → OneHotEncoder (drop_first=True)
+  │ • Train/test split: 80/20 stratified
+  │
+  ↓
+Transformed Features
+  │ [Scaled numerics + One-hot categoricals]
+  │ [Shape: ~80K × 100+ features (after encoding)]
+  │
+  ↓
+┌─────────────────────────┐
+│ RAY: XGBoost Training   │
+└─────────────────────────┘
+  │ • 5-fold cross-validation
+  │ • Hyperparameter tuning (30-50 trials)
+  │ • Select best model by ROC-AUC
+  │
+  ↓
+Trained Model Pipeline
+  │ [ColumnTransformer + XGBClassifier]
+  │ (saved as MLflow artifact)
+  │
+  ↓
+┌─────────────────────────┐
+│  DEPLOY: Model Export   │
+└─────────────────────────┘
+  │ • Serialize model + preprocessor
+  │ • Package with MLflow dependencies
+  │ • Containerize with Docker
+  │
+  ↓
+Production Model Endpoint
+  │
+  ↓
+┌─────────────────────────┐
+│ Prediction Request      │
+└─────────────────────────┘
+  │ Input: {"age": 55, "time_in_hospital": 3, ...}
+  │
+  ↓
+  │ • Automatic preprocessing (scaler + encoder)
+  │ • XGBoost inference
+  │
+  ↓
+  │ Output: [0.7234] (probability of readmission)
+  │
+  ↓
+┌─────────────────────────┐
+│   MONITOR: Drift Check  │
+└─────────────────────────┘
+  │ • Collect predictions + features
+  │ • Compare distributions (baseline vs current)
+  │ • Compute PSI per feature
+  │ • Compute KS test p-values
+  │
+  ↓
+Drift Detected? → Retrain (back to RAY)
+No Drift? → Continue monitoring
+```
+
+### Execution Flows
+
+#### Initial Deployment Flow
+
+```
+1. User runs EDA notebook
+   └─→ Understand data characteristics
+
+2. User runs RAY component
+   └─→ python RAY/ray_tune_xgboost.py --data diabetic_data.csv
+       └─→ Ray Tune spawns 30-50 trials
+       └─→ Each trial: 5-fold CV on XGBoost
+       └─→ Best model logged to MLflow
+
+3. User runs DEPLOY component
+   └─→ python DEPLOY/build_docker_image.py
+       └─→ Query MLflow for best model
+       └─→ Export model to ./model
+       └─→ Generate Dockerfile
+       └─→ Build Docker image
+       └─→ docker run -p 5001:5001 diabetic-xgb:serve
+
+4. Model is now live and serving predictions
+```
+
+#### Automated Monitoring Flow (via Airflow)
+
+```
+Daily at 02:00 UTC:
+  │
+  ├─→ Airflow Scheduler triggers "monitor_and_retrain" DAG
+  │
+  ↓
+  ├─→ MONITOR component executes
+  │     ├─→ Load baseline data (training set)
+  │     ├─→ Load current data (recent production logs)
+  │     ├─→ Score both datasets via API (http://localhost:5001/invocations)
+  │     ├─→ Compute drift metrics:
+  │     │     • PSI for each feature
+  │     │     • KS test p-values
+  │     │     • Prediction distribution PSI
+  │     │
+  │     ├─→ Evaluate multi-gate logic:
+  │     │     • 30%+ features drifted?
+  │     │     • Any feature PSI > 1.0?
+  │     │     • Critical features drifted?
+  │     │     • Prediction PSI > 0.2?
+  │     │
+  │     └─→ Decision:
+  │           │
+  │           ├─ NO DRIFT:
+  │           │   └─→ Log "no drift" to JSON
+  │           │   └─→ Exit (200 status)
+  │           │
+  │           └─ DRIFT DETECTED:
+  │               └─→ Log "drift detected" to JSON
+  │               └─→ Trigger subprocess: RAY/ray_tune_xgboost.py
+  │                     └─→ Retrain with current data
+  │                     └─→ New best model to MLflow
+  │               └─→ Trigger subprocess: DEPLOY/build_docker_image.py
+  │                     └─→ Export new model
+  │                     └─→ Rebuild Docker image
+  │               └─→ Optionally restart container
+  │               └─→ Log "retraining complete" to JSON
+  │
+  ↓
+Airflow logs task success/failure
+  └─→ Next run: tomorrow at 02:00 UTC
+```
+
+#### Manual Retrain Flow (Without Drift)
+
+```
+User decides to retrain manually:
+  │
+  ├─→ python MONITOR/monitor_and_retrain.py \
+  │     --force-retrain \
+  │     --baseline data/diabetic_data.csv \
+  │     --current data/new_data.csv
+  │
+  ↓
+  ├─→ Skip drift detection
+  ├─→ Directly trigger RAY component
+  ├─→ Wait for retraining to complete
+  ├─→ Trigger DEPLOY component
+  └─→ New model deployed
+```
+
+### Storage & Artifacts
+
+```
+File System Layout:
+───────────────────
+
+RAY/
+├── mlruns/                          # MLflow tracking store
+│   └── <experiment_id>/
+│       └── <run_id>/
+│           ├── artifacts/
+│           │   └── model/           # Serialized model + preprocessor
+│           │       ├── MLmodel
+│           │       ├── model.pkl
+│           │       ├── conda.yaml
+│           │       └── requirements.txt
+│           ├── metrics/             # ROC-AUC, F1, etc.
+│           ├── params/              # Hyperparameters
+│           └── tags/                # Metadata
+└── ray_exp/                         # Ray Tune results
+    └── xgb_hpo/
+        ├── best_config.json         # Best hyperparameters
+        └── trainable_*/             # Individual trial results
+
+DEPLOY/
+├── model/                           # Exported model (from MLflow)
+│   ├── MLmodel
+│   ├── model.pkl
+│   └── requirements.txt
+└── Dockerfile                       # Generated Dockerfile
+
+MONITOR/
+└── monitoring/
+    ├── out/
+    │   └── drift_summary_*.json     # Drift detection results
+    └── tmp/
+        ├── ref_scored.csv           # Baseline scored data
+        └── cur_scored.csv           # Current scored data
+```
+
+---
+
 ## Component Details
 
 ### 1. EDA - Exploratory Data Analysis
