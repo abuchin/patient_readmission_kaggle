@@ -84,12 +84,12 @@ MONITOR/
 ### Basic Usage
 
 ```bash
-python code/MONITOR/monitor_and_retrain.py \
-  --baseline data/X_train.csv \
-  --current data/diabetic_data_drift.csv \
+python monitor_and_retrain.py \
+  --baseline /home/ec2-user/projects/patient_selection/data/diabetic_data.csv \
+  --current /home/ec2-user/projects/patient_selection/data/diabetic_data_drift.csv \
   --endpoint http://localhost:5001/invocations \
-  --retrain-script code/RAY/ray_tune_xgboost.py \
-  --tracking-uri file:/home/ec2-user/projects/patient_selection/code/RAY/mlruns \
+  --retrain-script /home/ec2-user/projects/patient_selection/patient_readmission_kaggle/RAY/ray_tune_xgboost.py \
+  --tracking-uri file:/home/ec2-user/projects/patient_selection/patient_readmission_kaggle/RAY/mlruns \
   --experiment xgb_diabetic_readmission_hpo
 ```
 
