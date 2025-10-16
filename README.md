@@ -769,7 +769,7 @@ apache-airflow==3.0.1, postgresql
 
 ```bash
 # Virtual environment
-python3.11 -m venv patient_env
+python3.13 -m venv patient_env
 source patient_env/bin/activate
 
 # Install all
