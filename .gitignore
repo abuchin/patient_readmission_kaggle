@@ -16,6 +16,10 @@ ray_exp_retrain/
 **/params.json
 **/params.pkl
 
+# === Configuration and log files ===
+**.cfg
+**.log
+
 # === MLflow local store (if ever created in repo) ===
 RAY/mlruns/
 **/mlruns/

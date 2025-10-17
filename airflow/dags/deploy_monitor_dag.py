@@ -1,18 +1,18 @@
-"""DAGs to run DEPLOY on Airflow startup and MONITOR on schedule.
+"""DAGs to run scripts in the project-worker Docker container.
 
 This file defines two DAGs:
-- `deploy_on_start`: runs once (schedule_interval='@once') to export and build the model image using DEPLOY/build_docker_image.py
-- `monitor_and_retrain`: runs daily and executes MONITOR/monitor_and_retrain.py with reasonable defaults
+- `deploy_on_start`: runs once to execute DEPLOY/build_docker_image.py in the project-worker container
+- `monitor_and_retrain`: runs daily and executes MONITOR/monitor_and_retrain.py in the project-worker container
 
-Both tasks invoke the project scripts via python3 and inherit the container environment so things like
-`MLFLOW_TRACKING_URI` can be provided by the Airflow container environment or an `.env`.
+Both tasks use DockerOperator to execute commands in the project-worker container defined in docker-compose.yaml.
+The project-worker container has the correct environment and paths set up for the patient_selection project.
 """
 
 from datetime import datetime, timedelta
 import os
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.docker.operators.docker import DockerOperator
 import subprocess
 
 # Base path where the project is mounted inside Airflow containers
@@ -41,22 +41,20 @@ def run_script(cmd, env=None):
 with DAG(
     dag_id="deploy_on_start",
     default_args=DEFAULT_ARGS,
-    description="Run DEPLOY/build_docker_image.py once when Airflow starts",
+    description="Run DEPLOY script in project-worker container",
     schedule="@once",
     start_date=datetime(2025, 10, 1),
     catchup=False,
     tags=["deploy"],
 ) as deploy_dag:
 
-    def deploy_py():
-        try:
-            run_script(f"python3 {PROJECT_ROOT}/DEPLOY/build_docker_image.py --no-build")
-        except Exception:
-            run_script(f"python3 {PROJECT_ROOT}/DEPLOY/build_docker_image.py")
-
-    deploy_task = PythonOperator(
+    deploy_task = DockerOperator(
         task_id="deploy_best_model",
-        python_callable=deploy_py,
+        image="project-worker:latest",
+        command="python /home/ec2-user/projects/patient_selection/code/DEPLOY/build_docker_image.py --no-build",
+        docker_url="unix://var/run/docker.sock",
+        network_mode="airflow-network",
+        auto_remove='success',
         dag=deploy_dag,
     )
 
@@ -65,7 +63,7 @@ with DAG(
 with DAG(
     dag_id="monitor_and_retrain",
     default_args=DEFAULT_ARGS,
-    description="Run MONITOR/monitor_and_retrain.py on a daily schedule",
+    description="Run MONITOR script in project-worker container",
     schedule="0 2 * * *",  # daily at 02:00 UTC
     start_date=datetime(2025, 10, 1),
     catchup=False,
@@ -74,21 +72,23 @@ with DAG(
 ) as monitor_dag:
 
     # Default arguments passed to the monitor script; override in Airflow UI if needed
-    baseline = f"{PROJECT_ROOT}/MONITOR/monitoring/ref.csv"
-    current = f"{PROJECT_ROOT}/MONITOR/monitoring/cur.csv"
+    baseline = "/home/ec2-user/projects/patient_selection/code/MONITOR/monitoring/ref.csv"
+    current = "/home/ec2-user/projects/patient_selection/code/MONITOR/monitoring/cur.csv"
     endpoint = os.environ.get("MONITOR_ENDPOINT", "http://localhost:5001/invocations")
+    
+    monitor_cmd = (
+        f"python /home/ec2-user/projects/patient_selection/code/MONITOR/monitor_and_retrain.py "
+        f"--baseline {baseline} --current {current} --endpoint {endpoint} "
+        f"--retrain-script /home/ec2-user/projects/patient_selection/code/RAY/ray_tune_xgboost.py "
+        f"--build-script /home/ec2-user/projects/patient_selection/code/DEPLOY/build_docker_image.py"
+    )
 
-    def monitor_py():
-        cmd = (
-            f"python3 {PROJECT_ROOT}/MONITOR/monitor_and_retrain.py "
-            f"--baseline {baseline} --current {current} --endpoint {endpoint} "
-            f"--retrain-script {PROJECT_ROOT}/RAY/ray_tune_xgboost.py "
-            f"--build-script {PROJECT_ROOT}/DEPLOY/build_docker_image.py"
-        )
-        run_script(cmd)
-
-    monitor_task = PythonOperator(
+    monitor_task = DockerOperator(
         task_id="monitor_and_retrain",
-        python_callable=monitor_py,
+        image="project-worker:latest",
+        command=monitor_cmd,
+        docker_url="unix://var/run/docker.sock",
+        network_mode="airflow-network",
+        auto_remove='never',
         dag=monitor_dag,
     )

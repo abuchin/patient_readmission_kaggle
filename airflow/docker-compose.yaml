@@ -70,19 +70,44 @@ x-airflow-common:
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
     # The following line can be used to set a custom config file, stored in the local config folder
     AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    # Docker configuration
+    DOCKER_HOST: 'unix:///var/run/docker.sock'
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - ${AIRFLOW_PROJ_DIR:-.}:/opt/airflow/project
+    - ${AIRFLOW_PROJ_DIR:-.}/../:/opt/airflow/project
+    - /var/run/docker.sock:/var/run/docker.sock
   user: "${AIRFLOW_UID:-50000}:0"
+  group_add:
+    - "999"
+  privileged: true
+  networks:
+    - airflow-network
   depends_on:
     &airflow-common-depends-on
     postgres:
       condition: service_healthy
 
 services:
+# Project worker service using the root Dockerfile
+  project-worker:
+    build:
+      context: ..
+      dockerfile: dockerfile
+    image: project-worker:latest
+    container_name: project-worker
+    volumes:
+      - ${AIRFLOW_PROJ_DIR:-.}/../RAY:/home/ec2-user/projects/patient_selection/code/RAY
+      - ${AIRFLOW_PROJ_DIR:-.}/../DEPLOY:/home/ec2-user/projects/patient_selection/code/DEPLOY
+      - ${AIRFLOW_PROJ_DIR:-.}/../MONITOR:/home/ec2-user/projects/patient_selection/code/MONITOR
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /home/ec2-user/projects/patient_selection/code
+    command: ["while true; do sleep 3600; done"]
+    restart: unless-stopped
+    networks:
+      - airflow-network
   postgres:
     image: postgres:13
     environment:
@@ -97,6 +122,8 @@ services:
       retries: 5
       start_period: 5s
     restart: always
+    networks:
+      - airflow-network
 
   airflow-apiserver:
     <<: *airflow-common
@@ -110,6 +137,8 @@ services:
       retries: 5
       start_period: 30s
     restart: always
+    networks:
+      - airflow-network
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -125,6 +154,8 @@ services:
       retries: 5
       start_period: 30s
     restart: always
+    networks:
+      - airflow-network
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -140,6 +171,8 @@ services:
       retries: 5
       start_period: 30s
     restart: always
+    networks:
+      - airflow-network
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -156,6 +189,8 @@ services:
       retries: 5
       start_period: 30s
     restart: always
+    networks:
+      - airflow-network
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -243,6 +278,8 @@ services:
         echo
         ls -la /opt/airflow/{logs,dags,plugins,config}
 
+    networks:
+      - airflow-network
     # yamllint enable rule:line-length
     environment:
       <<: *airflow-common-env
@@ -260,6 +297,8 @@ services:
     environment:
       <<: *airflow-common-env
       CONNECTION_CHECK_MAX_COUNT: "0"
+    networks:
+      - airflow-network
     # Workaround for entrypoint issue. See: https://github.com/apache/airflow/issues/16252
     command:
       - bash
@@ -285,6 +324,8 @@ services:
       retries: 5
       start_period: 30s
     restart: always
+    networks:
+      - airflow-network
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -292,3 +333,7 @@ services:
 
 volumes:
   postgres-db-volume:
+
+networks:
+  airflow-network:
+    driver: bridge
