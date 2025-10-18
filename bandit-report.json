@@ -1,6 +1,6 @@
 {
   "errors": [],
-  "generated_at": "2025-10-18T22:54:07Z",
+  "generated_at": "2025-10-18T23:20:29Z",
   "metrics": {
     "./DEPLOY/build_docker_image.py": {
       "CONFIDENCE.HIGH": 2,
@@ -11,7 +11,7 @@
       "SEVERITY.LOW": 1,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 117,
+      "loc": 140,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -24,7 +24,7 @@
       "SEVERITY.LOW": 3,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 281,
+      "loc": 407,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -37,7 +37,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 228,
+      "loc": 256,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -89,7 +89,7 @@
       "SEVERITY.LOW": 2,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 164,
+      "loc": 213,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -102,7 +102,7 @@
       "SEVERITY.LOW": 1,
       "SEVERITY.MEDIUM": 1,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 179,
+      "loc": 202,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -115,7 +115,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 1,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 85,
+      "loc": 92,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -128,7 +128,7 @@
       "SEVERITY.LOW": 3,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 281,
+      "loc": 407,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -141,7 +141,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 1,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 165,
+      "loc": 186,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -154,7 +154,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 228,
+      "loc": 256,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -180,7 +180,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 68,
+      "loc": 75,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -193,7 +193,7 @@
       "SEVERITY.LOW": 31,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 203,
+      "loc": 257,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -206,7 +206,7 @@
       "SEVERITY.LOW": 32,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 170,
+      "loc": 211,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -219,7 +219,7 @@
       "SEVERITY.LOW": 76,
       "SEVERITY.MEDIUM": 4,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 2569,
+      "loc": 3102,
       "nosec": 0,
       "skipped_tests": 0
     }
@@ -246,7 +246,7 @@
       "test_name": "blacklist"
     },
     {
-      "code": "53     print(f\"+ {cmd}\")\n54     res = subprocess.run(cmd, shell=True, cwd=cwd)\n55     if res.returncode != 0:\n",
+      "code": "54     print(f\"+ {cmd}\")\n55     res = subprocess.run(cmd, shell=True, cwd=cwd)\n56     if res.returncode != 0:\n",
       "col_offset": 10,
       "end_col_offset": 50,
       "filename": "./DEPLOY/build_docker_image.py",
@@ -257,18 +257,18 @@
       },
       "issue_severity": "HIGH",
       "issue_text": "subprocess call with shell=True identified, security issue.",
-      "line_number": 54,
+      "line_number": 55,
       "line_range": [
-        54
+        55
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b602_subprocess_popen_with_shell_equals_true.html",
       "test_id": "B602",
       "test_name": "subprocess_popen_with_shell_equals_true"
     },
     {
-      "code": "12 \n13 import argparse, os, json, sys, time, subprocess\n14 from pathlib import Path\n",
+      "code": "15 import os\n16 import subprocess\n17 import sys\n",
       "col_offset": 0,
-      "end_col_offset": 48,
+      "end_col_offset": 17,
       "filename": "./MONITOR/monitor_and_retrain.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -277,16 +277,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 13,
+      "line_number": 16,
       "line_range": [
-        13
+        16
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "332     print(\"Retraining (Ray):\", \" \".join(retrain_cmd))\n333     subprocess.check_call(retrain_cmd, env=env)\n334 \n",
+      "code": "461     print(\"Retraining (Ray):\", \" \".join(retrain_cmd))\n462     subprocess.check_call(retrain_cmd, env=env)\n463 \n",
       "col_offset": 4,
       "end_col_offset": 47,
       "filename": "./MONITOR/monitor_and_retrain.py",
@@ -297,16 +297,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 333,
+      "line_number": 462,
       "line_range": [
-        333
+        462
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "344         print(\"Building image:\", \" \".join(build_cmd))\n345         subprocess.check_call(build_cmd, env=env)\n346         # Optionally: stop/restart your container here.\n",
+      "code": "478         print(\"Building image:\", \" \".join(build_cmd))\n479         subprocess.check_call(build_cmd, env=env)\n480         # Optionally: stop/restart your container here.\n",
       "col_offset": 8,
       "end_col_offset": 49,
       "filename": "./MONITOR/monitor_and_retrain.py",
@@ -317,9 +317,9 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 345,
+      "line_number": 479,
       "line_range": [
-        345
+        479
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
@@ -366,7 +366,7 @@
       "test_name": "blacklist"
     },
     {
-      "code": "53     print(f\"+ {cmd}\")\n54     res = subprocess.run(cmd, shell=True, cwd=cwd)\n55     if res.returncode != 0:\n",
+      "code": "54     print(f\"+ {cmd}\")\n55     res = subprocess.run(cmd, shell=True, cwd=cwd)\n56     if res.returncode != 0:\n",
       "col_offset": 10,
       "end_col_offset": 50,
       "filename": "./astro-airflow/include/DEPLOY/build_docker_image.py",
@@ -377,16 +377,16 @@
       },
       "issue_severity": "HIGH",
       "issue_text": "subprocess call with shell=True identified, security issue.",
-      "line_number": 54,
+      "line_number": 55,
       "line_range": [
-        54
+        55
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b602_subprocess_popen_with_shell_equals_true.html",
       "test_id": "B602",
       "test_name": "subprocess_popen_with_shell_equals_true"
     },
     {
-      "code": "162                 import xgboost as xgb\n163                 import pickle\n164                 \n",
+      "code": "183                 print(\"Training XGBoost model with best parameters...\")\n184                 import pickle\n185 \n",
       "col_offset": 16,
       "end_col_offset": 29,
       "filename": "./astro-airflow/include/DEPLOY/build_docker_image.py",
@@ -397,16 +397,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with pickle module.",
-      "line_number": 163,
+      "line_number": 184,
       "line_range": [
-        163
+        184
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b403-import-pickle",
       "test_id": "B403",
       "test_name": "blacklist"
     },
     {
-      "code": "10 import json\n11 import pickle\n12 \n",
+      "code": "7 import os\n8 import pickle\n9 import sys\n",
       "col_offset": 0,
       "end_col_offset": 13,
       "filename": "./astro-airflow/include/MONITOR/enhanced_monitor.py",
@@ -417,16 +417,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with pickle module.",
-      "line_number": 11,
+      "line_number": 8,
       "line_range": [
-        11
+        8
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b403-import-pickle",
       "test_id": "B403",
       "test_name": "blacklist"
     },
     {
-      "code": "178     ap.add_argument(\"--prediction-col\", default=\"pred_readmit\")\n179     ap.add_argument(\"--tmp-dir\", default=\"/tmp/monitor\")\n180     \n",
+      "code": "201     ap.add_argument(\"--prediction-col\", default=\"pred_readmit\")\n202     ap.add_argument(\"--tmp-dir\", default=\"/tmp/monitor\")\n203 \n",
       "col_offset": 41,
       "end_col_offset": 55,
       "filename": "./astro-airflow/include/MONITOR/enhanced_monitor.py",
@@ -437,16 +437,16 @@
       },
       "issue_severity": "MEDIUM",
       "issue_text": "Probable insecure usage of temp file/directory.",
-      "line_number": 179,
+      "line_number": 202,
       "line_range": [
-        179
+        202
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b108_hardcoded_tmp_directory.html",
       "test_id": "B108",
       "test_name": "hardcoded_tmp_directory"
     },
     {
-      "code": "40     ap.add_argument(\"--prediction-col\", default=\"pred_readmit\")\n41     ap.add_argument(\"--tmp-dir\", default=\"/tmp/monitor\")\n42     \n",
+      "code": "45     ap.add_argument(\"--prediction-col\", default=\"pred_readmit\")\n46     ap.add_argument(\"--tmp-dir\", default=\"/tmp/monitor\")\n47 \n",
       "col_offset": 41,
       "end_col_offset": 55,
       "filename": "./astro-airflow/include/MONITOR/mock_monitor.py",
@@ -457,18 +457,18 @@
       },
       "issue_severity": "MEDIUM",
       "issue_text": "Probable insecure usage of temp file/directory.",
-      "line_number": 41,
+      "line_number": 46,
       "line_range": [
-        41
+        46
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b108_hardcoded_tmp_directory.html",
       "test_id": "B108",
       "test_name": "hardcoded_tmp_directory"
     },
     {
-      "code": "12 \n13 import argparse, os, json, sys, time, subprocess\n14 from pathlib import Path\n",
+      "code": "15 import os\n16 import subprocess\n17 import sys\n",
       "col_offset": 0,
-      "end_col_offset": 48,
+      "end_col_offset": 17,
       "filename": "./astro-airflow/include/MONITOR/monitor_and_retrain.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -477,16 +477,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Consider possible security implications associated with the subprocess module.",
-      "line_number": 13,
+      "line_number": 16,
       "line_range": [
-        13
+        16
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/blacklists/blacklist_imports.html#b404-import-subprocess",
       "test_id": "B404",
       "test_name": "blacklist"
     },
     {
-      "code": "332     print(\"Retraining (Ray):\", \" \".join(retrain_cmd))\n333     subprocess.check_call(retrain_cmd, env=env)\n334 \n",
+      "code": "461     print(\"Retraining (Ray):\", \" \".join(retrain_cmd))\n462     subprocess.check_call(retrain_cmd, env=env)\n463 \n",
       "col_offset": 4,
       "end_col_offset": 47,
       "filename": "./astro-airflow/include/MONITOR/monitor_and_retrain.py",
@@ -497,16 +497,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 333,
+      "line_number": 462,
       "line_range": [
-        333
+        462
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "344         print(\"Building image:\", \" \".join(build_cmd))\n345         subprocess.check_call(build_cmd, env=env)\n346         # Optionally: stop/restart your container here.\n",
+      "code": "478         print(\"Building image:\", \" \".join(build_cmd))\n479         subprocess.check_call(build_cmd, env=env)\n480         # Optionally: stop/restart your container here.\n",
       "col_offset": 8,
       "end_col_offset": 49,
       "filename": "./astro-airflow/include/MONITOR/monitor_and_retrain.py",
@@ -517,16 +517,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "subprocess call - check for execution of untrusted input.",
-      "line_number": 345,
+      "line_number": 479,
       "line_range": [
-        345
+        479
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b603_subprocess_without_shell_equals_true.html",
       "test_id": "B603",
       "test_name": "subprocess_without_shell_equals_true"
     },
     {
-      "code": "143     ap.add_argument(\"--prediction-col\", default=\"pred_readmit\")\n144     ap.add_argument(\"--tmp-dir\", default=\"/tmp/monitor\")\n145     \n",
+      "code": "164     ap.add_argument(\"--prediction-col\", default=\"pred_readmit\")\n165     ap.add_argument(\"--tmp-dir\", default=\"/tmp/monitor\")\n166 \n",
       "col_offset": 41,
       "end_col_offset": 55,
       "filename": "./astro-airflow/include/MONITOR/real_monitor.py",
@@ -537,121 +537,19 @@
       },
       "issue_severity": "MEDIUM",
       "issue_text": "Probable insecure usage of temp file/directory.",
-      "line_number": 144,
+      "line_number": 165,
       "line_range": [
-        144
+        165
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b108_hardcoded_tmp_directory.html",
       "test_id": "B108",
       "test_name": "hardcoded_tmp_directory"
     },
     {
-      "code": "68     \"\"\"\n69     assert dag.tags, f\"{dag_id} in {fileloc} has no tags\"\n70     if APPROVED_TAGS:\n",
+      "code": "69     \"\"\"\n70     assert dag.tags, f\"{dag_id} in {fileloc} has no tags\"\n71     if APPROVED_TAGS:\n",
       "col_offset": 4,
       "end_col_offset": 57,
       "filename": "./astro-airflow/tests/dags/test_dag_example.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 69,
-      "line_range": [
-        69
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "70     if APPROVED_TAGS:\n71         assert not set(dag.tags) - APPROVED_TAGS\n72 \n",
-      "col_offset": 8,
-      "end_col_offset": 48,
-      "filename": "./astro-airflow/tests/dags/test_dag_example.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 71,
-      "line_range": [
-        71
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "80     \"\"\"\n81     assert (\n82         dag.default_args.get(\"retries\", None) >= 2\n83     ), f\"{dag_id} in {fileloc} must have task retries >= 2.\"\n",
-      "col_offset": 4,
-      "end_col_offset": 60,
-      "filename": "./astro-airflow/tests/dags/test_dag_example.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 81,
-      "line_range": [
-        81,
-        82,
-        83
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "34                     \n35                 assert hasattr(module, 'deploy_on_start_bash') or hasattr(module, 'monitor_and_retrain_bash')\n36         except Exception as e:\n",
-      "col_offset": 16,
-      "end_col_offset": 109,
-      "filename": "./tests/test_airflow_dags.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 35,
-      "line_range": [
-        35
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "68                 # Verify configuration is valid\n69                 assert dag_config['default_args']['retries'] >= 2\n70                 assert 'owner' in dag_config['default_args']\n",
-      "col_offset": 16,
-      "end_col_offset": 65,
-      "filename": "./tests/test_airflow_dags.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 69,
-      "line_range": [
-        69
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "69                 assert dag_config['default_args']['retries'] >= 2\n70                 assert 'owner' in dag_config['default_args']\n71                 assert dag_config['catchup'] is False\n",
-      "col_offset": 16,
-      "end_col_offset": 60,
-      "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
         "id": 703,
@@ -668,30 +566,10 @@
       "test_name": "assert_used"
     },
     {
-      "code": "70                 assert 'owner' in dag_config['default_args']\n71                 assert dag_config['catchup'] is False\n72                 assert isinstance(dag_config['tags'], list)\n",
-      "col_offset": 16,
-      "end_col_offset": 53,
-      "filename": "./tests/test_airflow_dags.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 71,
-      "line_range": [
-        71
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "71                 assert dag_config['catchup'] is False\n72                 assert isinstance(dag_config['tags'], list)\n73                 \n",
-      "col_offset": 16,
-      "end_col_offset": 59,
-      "filename": "./tests/test_airflow_dags.py",
+      "code": "71     if APPROVED_TAGS:\n72         assert not set(dag.tags) - APPROVED_TAGS\n73 \n",
+      "col_offset": 8,
+      "end_col_offset": 48,
+      "filename": "./astro-airflow/tests/dags/test_dag_example.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
         "id": 703,
@@ -708,9 +586,31 @@
       "test_name": "assert_used"
     },
     {
-      "code": "88             # Basic validation - commands should not be empty and should be strings\n89             assert isinstance(cmd, str)\n90             assert len(cmd.strip()) > 0\n",
-      "col_offset": 12,
-      "end_col_offset": 39,
+      "code": "81     \"\"\"\n82     assert (\n83         dag.default_args.get(\"retries\", None) >= 2\n84     ), f\"{dag_id} in {fileloc} must have task retries >= 2.\"\n",
+      "col_offset": 4,
+      "end_col_offset": 60,
+      "filename": "./astro-airflow/tests/dags/test_dag_example.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 82,
+      "line_range": [
+        82,
+        83,
+        84
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "51 \n52                 assert hasattr(module, \"deploy_on_start_bash\") or hasattr(\n53                     module, \"monitor_and_retrain_bash\"\n54                 )\n55         except Exception as e:\n",
+      "col_offset": 16,
+      "end_col_offset": 17,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -719,18 +619,20 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 89,
+      "line_number": 52,
       "line_range": [
-        89
+        52,
+        53,
+        54
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "89             assert isinstance(cmd, str)\n90             assert len(cmd.strip()) > 0\n91             # Commands should not contain obvious injection vulnerabilities\n",
-      "col_offset": 12,
-      "end_col_offset": 39,
+      "code": "90                 # Verify configuration is valid\n91                 assert dag_config[\"default_args\"][\"retries\"] >= 2\n92                 assert \"owner\" in dag_config[\"default_args\"]\n",
+      "col_offset": 16,
+      "end_col_offset": 65,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -739,18 +641,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 90,
+      "line_number": 91,
       "line_range": [
-        90
+        91
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "91             # Commands should not contain obvious injection vulnerabilities\n92             assert ';rm ' not in cmd.lower()\n93             assert '&& rm ' not in cmd.lower()\n",
-      "col_offset": 12,
-      "end_col_offset": 44,
+      "code": "91                 assert dag_config[\"default_args\"][\"retries\"] >= 2\n92                 assert \"owner\" in dag_config[\"default_args\"]\n93                 assert dag_config[\"catchup\"] is False\n",
+      "col_offset": 16,
+      "end_col_offset": 60,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -768,9 +670,9 @@
       "test_name": "assert_used"
     },
     {
-      "code": "92             assert ';rm ' not in cmd.lower()\n93             assert '&& rm ' not in cmd.lower()\n94             assert '| rm ' not in cmd.lower()\n",
-      "col_offset": 12,
-      "end_col_offset": 46,
+      "code": "92                 assert \"owner\" in dag_config[\"default_args\"]\n93                 assert dag_config[\"catchup\"] is False\n94                 assert isinstance(dag_config[\"tags\"], list)\n",
+      "col_offset": 16,
+      "end_col_offset": 53,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -788,9 +690,9 @@
       "test_name": "assert_used"
     },
     {
-      "code": "93             assert '&& rm ' not in cmd.lower()\n94             assert '| rm ' not in cmd.lower()\n95             \n",
-      "col_offset": 12,
-      "end_col_offset": 45,
+      "code": "93                 assert dag_config[\"catchup\"] is False\n94                 assert isinstance(dag_config[\"tags\"], list)\n95 \n",
+      "col_offset": 16,
+      "end_col_offset": 59,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -808,9 +710,9 @@
       "test_name": "assert_used"
     },
     {
-      "code": "102         # Test deploy DAG task order\n103         assert 'deploy_best_model' in deploy_tasks\n104         assert 'run_docker_container' in deploy_tasks\n",
-      "col_offset": 8,
-      "end_col_offset": 50,
+      "code": "110             # Basic validation - commands should not be empty and should be strings\n111             assert isinstance(cmd, str)\n112             assert len(cmd.strip()) > 0\n",
+      "col_offset": 12,
+      "end_col_offset": 39,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -819,18 +721,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 103,
+      "line_number": 111,
       "line_range": [
-        103
+        111
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "103         assert 'deploy_best_model' in deploy_tasks\n104         assert 'run_docker_container' in deploy_tasks\n105         \n",
-      "col_offset": 8,
-      "end_col_offset": 53,
+      "code": "111             assert isinstance(cmd, str)\n112             assert len(cmd.strip()) > 0\n113             # Commands should not contain obvious injection vulnerabilities\n",
+      "col_offset": 12,
+      "end_col_offset": 39,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -839,18 +741,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 104,
+      "line_number": 112,
       "line_range": [
-        104
+        112
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "106         # Test monitor DAG task order  \n107         assert 'monitor_performance' in monitor_tasks\n108         assert 'retrain_if_needed' in monitor_tasks\n",
-      "col_offset": 8,
-      "end_col_offset": 53,
+      "code": "113             # Commands should not contain obvious injection vulnerabilities\n114             assert \";rm \" not in cmd.lower()\n115             assert \"&& rm \" not in cmd.lower()\n",
+      "col_offset": 12,
+      "end_col_offset": 44,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -859,18 +761,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 107,
+      "line_number": 114,
       "line_range": [
-        107
+        114
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "107         assert 'monitor_performance' in monitor_tasks\n108         assert 'retrain_if_needed' in monitor_tasks\n109         assert 'redeploy_if_retrained' in monitor_tasks\n",
-      "col_offset": 8,
-      "end_col_offset": 51,
+      "code": "114             assert \";rm \" not in cmd.lower()\n115             assert \"&& rm \" not in cmd.lower()\n116             assert \"| rm \" not in cmd.lower()\n",
+      "col_offset": 12,
+      "end_col_offset": 46,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -879,58 +781,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 108,
+      "line_number": 115,
       "line_range": [
-        108
+        115
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "108         assert 'retrain_if_needed' in monitor_tasks\n109         assert 'redeploy_if_retrained' in monitor_tasks\n110         \n",
-      "col_offset": 8,
-      "end_col_offset": 55,
-      "filename": "./tests/test_airflow_dags.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 109,
-      "line_range": [
-        109
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "112         deploy_task_order = {task: i for i, task in enumerate(deploy_tasks)}\n113         assert deploy_task_order['deploy_best_model'] < deploy_task_order['run_docker_container']\n114         \n",
-      "col_offset": 8,
-      "end_col_offset": 97,
-      "filename": "./tests/test_airflow_dags.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 113,
-      "line_range": [
-        113
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "115         monitor_task_order = {task: i for i, task in enumerate(monitor_tasks)}\n116         assert monitor_task_order['monitor_performance'] < monitor_task_order['retrain_if_needed']\n117         assert monitor_task_order['retrain_if_needed'] < monitor_task_order['redeploy_if_retrained']\n",
-      "col_offset": 8,
-      "end_col_offset": 98,
+      "code": "115             assert \"&& rm \" not in cmd.lower()\n116             assert \"| rm \" not in cmd.lower()\n117 \n",
+      "col_offset": 12,
+      "end_col_offset": 45,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -948,9 +810,9 @@
       "test_name": "assert_used"
     },
     {
-      "code": "116         assert monitor_task_order['monitor_performance'] < monitor_task_order['retrain_if_needed']\n117         assert monitor_task_order['retrain_if_needed'] < monitor_task_order['redeploy_if_retrained']\n118 \n",
+      "code": "128         # Test deploy DAG task order\n129         assert \"deploy_best_model\" in deploy_tasks\n130         assert \"run_docker_container\" in deploy_tasks\n",
       "col_offset": 8,
-      "end_col_offset": 100,
+      "end_col_offset": 50,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -959,18 +821,58 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 117,
+      "line_number": 129,
       "line_range": [
-        117
+        129
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "133             for package in essential_packages:\n134                 assert package in requirements.lower(), f\"Missing required package: {package}\"\n135         else:\n",
-      "col_offset": 16,
-      "end_col_offset": 94,
+      "code": "129         assert \"deploy_best_model\" in deploy_tasks\n130         assert \"run_docker_container\" in deploy_tasks\n131 \n",
+      "col_offset": 8,
+      "end_col_offset": 53,
+      "filename": "./tests/test_airflow_dags.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 130,
+      "line_range": [
+        130
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "132         # Test monitor DAG task order\n133         assert \"monitor_performance\" in monitor_tasks\n134         assert \"retrain_if_needed\" in monitor_tasks\n",
+      "col_offset": 8,
+      "end_col_offset": 53,
+      "filename": "./tests/test_airflow_dags.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 133,
+      "line_range": [
+        133
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "133         assert \"monitor_performance\" in monitor_tasks\n134         assert \"retrain_if_needed\" in monitor_tasks\n135         assert \"redeploy_if_retrained\" in monitor_tasks\n",
+      "col_offset": 8,
+      "end_col_offset": 51,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -988,9 +890,9 @@
       "test_name": "assert_used"
     },
     {
-      "code": "147                 dir_path = os.path.join(astro_path, dir_name)\n148                 assert os.path.exists(dir_path), f\"Missing required directory: {dir_name}\"\n149                 \n",
-      "col_offset": 16,
-      "end_col_offset": 90,
+      "code": "134         assert \"retrain_if_needed\" in monitor_tasks\n135         assert \"redeploy_if_retrained\" in monitor_tasks\n136 \n",
+      "col_offset": 8,
+      "end_col_offset": 55,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -999,8 +901,54 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 148,
+      "line_number": 135,
       "line_range": [
+        135
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "138         deploy_task_order = {task: i for i, task in enumerate(deploy_tasks)}\n139         assert (\n140             deploy_task_order[\"deploy_best_model\"]\n141             < deploy_task_order[\"run_docker_container\"]\n142         )\n143 \n",
+      "col_offset": 8,
+      "end_col_offset": 9,
+      "filename": "./tests/test_airflow_dags.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 139,
+      "line_range": [
+        139,
+        140,
+        141,
+        142
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "144         monitor_task_order = {task: i for i, task in enumerate(monitor_tasks)}\n145         assert (\n146             monitor_task_order[\"monitor_performance\"]\n147             < monitor_task_order[\"retrain_if_needed\"]\n148         )\n149         assert (\n",
+      "col_offset": 8,
+      "end_col_offset": 9,
+      "filename": "./tests/test_airflow_dags.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 145,
+      "line_range": [
+        145,
+        146,
+        147,
         148
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
@@ -1008,9 +956,76 @@
       "test_name": "assert_used"
     },
     {
-      "code": "155                     if os.path.exists(astro_dir):\n156                         assert os.path.exists(file_path), f\"Missing required file: {file_name}\"\n157         else:\n",
+      "code": "148         )\n149         assert (\n150             monitor_task_order[\"retrain_if_needed\"]\n151             < monitor_task_order[\"redeploy_if_retrained\"]\n152         )\n153 \n",
+      "col_offset": 8,
+      "end_col_offset": 9,
+      "filename": "./tests/test_airflow_dags.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 149,
+      "line_range": [
+        149,
+        150,
+        151,
+        152
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "176             for package in essential_packages:\n177                 assert (\n178                     package in requirements.lower()\n179                 ), f\"Missing required package: {package}\"\n180         else:\n",
+      "col_offset": 16,
+      "end_col_offset": 57,
+      "filename": "./tests/test_airflow_dags.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 177,
+      "line_range": [
+        177,
+        178,
+        179
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "192                 dir_path = os.path.join(astro_path, dir_name)\n193                 assert os.path.exists(\n194                     dir_path\n195                 ), f\"Missing required directory: {dir_name}\"\n196 \n",
+      "col_offset": 16,
+      "end_col_offset": 60,
+      "filename": "./tests/test_airflow_dags.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 193,
+      "line_range": [
+        193,
+        194,
+        195
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "202                     if os.path.exists(astro_dir):\n203                         assert os.path.exists(\n204                             file_path\n205                         ), f\"Missing required file: {file_name}\"\n206         else:\n",
       "col_offset": 24,
-      "end_col_offset": 95,
+      "end_col_offset": 64,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -1019,18 +1034,20 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 156,
+      "line_number": 203,
       "line_range": [
-        156
+        203,
+        204,
+        205
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "219             for pattern in dangerous_patterns:\n220                 assert pattern not in cmd, f\"Potentially dangerous command pattern '{pattern}' found in: {cmd}\"\n221                 \n",
+      "code": "273             for pattern in dangerous_patterns:\n274                 assert (\n275                     pattern not in cmd\n276                 ), f\"Potentially dangerous command pattern '{pattern}' found in: {cmd}\"\n277 \n",
       "col_offset": 16,
-      "end_col_offset": 111,
+      "end_col_offset": 87,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -1039,18 +1056,20 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 220,
+      "line_number": 274,
       "line_range": [
-        220
+        274,
+        275,
+        276
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "224                 # Relative cd commands should be followed by && to ensure failure stops execution\n225                 assert '&&' in cmd, f\"Relative cd command should be followed by &&: {cmd}\"\n226 \n",
+      "code": "280                 # Relative cd commands should be followed by && to ensure failure stops execution\n281                 assert (\n282                     \"&&\" in cmd\n283                 ), f\"Relative cd command should be followed by &&: {cmd}\"\n284 \n",
       "col_offset": 16,
-      "end_col_offset": 90,
+      "end_col_offset": 73,
       "filename": "./tests/test_airflow_dags.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -1059,16 +1078,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 225,
+      "line_number": 281,
       "line_range": [
-        225
+        281,
+        282,
+        283
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "243         # Verify retry settings\n244         assert default_args['retries'] >= 1\n245         assert isinstance(default_args['retry_delay'], timedelta)\n",
+      "code": "301         # Verify retry settings\n302         assert default_args[\"retries\"] >= 1\n303         assert isinstance(default_args[\"retry_delay\"], timedelta)\n",
       "col_offset": 8,
       "end_col_offset": 43,
       "filename": "./tests/test_airflow_dags.py",
@@ -1079,16 +1100,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 244,
+      "line_number": 302,
       "line_range": [
-        244
+        302
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "244         assert default_args['retries'] >= 1\n245         assert isinstance(default_args['retry_delay'], timedelta)\n246         assert default_args['retry_delay'].total_seconds() >= 60  # At least 1 minute\n",
+      "code": "302         assert default_args[\"retries\"] >= 1\n303         assert isinstance(default_args[\"retry_delay\"], timedelta)\n304         assert default_args[\"retry_delay\"].total_seconds() >= 60  # At least 1 minute\n",
       "col_offset": 8,
       "end_col_offset": 65,
       "filename": "./tests/test_airflow_dags.py",
@@ -1099,16 +1120,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 245,
+      "line_number": 303,
       "line_range": [
-        245
+        303
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "245         assert isinstance(default_args['retry_delay'], timedelta)\n246         assert default_args['retry_delay'].total_seconds() >= 60  # At least 1 minute\n247         \n",
+      "code": "303         assert isinstance(default_args[\"retry_delay\"], timedelta)\n304         assert default_args[\"retry_delay\"].total_seconds() >= 60  # At least 1 minute\n305 \n",
       "col_offset": 8,
       "end_col_offset": 64,
       "filename": "./tests/test_airflow_dags.py",
@@ -1119,16 +1140,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 246,
+      "line_number": 304,
       "line_range": [
-        246
+        304
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "265             # Tasks should have reasonable priority weights\n266             assert isinstance(config['priority_weight'], int)\n267             assert config['priority_weight'] >= 1\n",
+      "code": "323             # Tasks should have reasonable priority weights\n324             assert isinstance(config[\"priority_weight\"], int)\n325             assert config[\"priority_weight\"] >= 1\n",
       "col_offset": 12,
       "end_col_offset": 61,
       "filename": "./tests/test_airflow_dags.py",
@@ -1139,16 +1160,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 266,
+      "line_number": 324,
       "line_range": [
-        266
+        324
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "266             assert isinstance(config['priority_weight'], int)\n267             assert config['priority_weight'] >= 1\n268             \n",
+      "code": "324             assert isinstance(config[\"priority_weight\"], int)\n325             assert config[\"priority_weight\"] >= 1\n326 \n",
       "col_offset": 12,
       "end_col_offset": 49,
       "filename": "./tests/test_airflow_dags.py",
@@ -1159,16 +1180,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 267,
+      "line_number": 325,
       "line_range": [
-        267
+        325
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "270             cmd = config['bash_command']\n271             assert 'while true' not in cmd.lower()\n272             assert 'for;;' not in cmd\n",
+      "code": "328             cmd = config[\"bash_command\"]\n329             assert \"while true\" not in cmd.lower()\n330             assert \"for;;\" not in cmd\n",
       "col_offset": 12,
       "end_col_offset": 50,
       "filename": "./tests/test_airflow_dags.py",
@@ -1179,16 +1200,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 271,
+      "line_number": 329,
       "line_range": [
-        271
+        329
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "271             assert 'while true' not in cmd.lower()\n272             assert 'for;;' not in cmd\n273             assert 'infinite' not in cmd.lower()\n",
+      "code": "329             assert \"while true\" not in cmd.lower()\n330             assert \"for;;\" not in cmd\n331             assert \"infinite\" not in cmd.lower()\n",
       "col_offset": 12,
       "end_col_offset": 37,
       "filename": "./tests/test_airflow_dags.py",
@@ -1199,16 +1220,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 272,
+      "line_number": 330,
       "line_range": [
-        272
+        330
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "272             assert 'for;;' not in cmd\n273             assert 'infinite' not in cmd.lower()\n",
+      "code": "330             assert \"for;;\" not in cmd\n331             assert \"infinite\" not in cmd.lower()\n",
       "col_offset": 12,
       "end_col_offset": 48,
       "filename": "./tests/test_airflow_dags.py",
@@ -1219,38 +1240,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 273,
+      "line_number": 331,
       "line_range": [
-        273
+        331
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "17         \n18         assert len(df) == 1000\n19         assert 'readmitted' in df.columns\n",
+      "code": "18 \n19         assert len(df) == 1000\n20         assert \"readmitted\" in df.columns\n",
       "col_offset": 8,
       "end_col_offset": 30,
-      "filename": "./tests/test_core_functionality.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 18,
-      "line_range": [
-        18
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "18         assert len(df) == 1000\n19         assert 'readmitted' in df.columns\n20         assert 'race' in df.columns\n",
-      "col_offset": 8,
-      "end_col_offset": 41,
       "filename": "./tests/test_core_functionality.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -1268,9 +1269,9 @@
       "test_name": "assert_used"
     },
     {
-      "code": "19         assert 'readmitted' in df.columns\n20         assert 'race' in df.columns\n21         assert 'gender' in df.columns\n",
+      "code": "19         assert len(df) == 1000\n20         assert \"readmitted\" in df.columns\n21         assert \"race\" in df.columns\n",
       "col_offset": 8,
-      "end_col_offset": 35,
+      "end_col_offset": 41,
       "filename": "./tests/test_core_functionality.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -1288,9 +1289,9 @@
       "test_name": "assert_used"
     },
     {
-      "code": "20         assert 'race' in df.columns\n21         assert 'gender' in df.columns\n22         \n",
+      "code": "20         assert \"readmitted\" in df.columns\n21         assert \"race\" in df.columns\n22         assert \"gender\" in df.columns\n",
       "col_offset": 8,
-      "end_col_offset": 37,
+      "end_col_offset": 35,
       "filename": "./tests/test_core_functionality.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -1308,7 +1309,27 @@
       "test_name": "assert_used"
     },
     {
-      "code": "33         \n34         assert encoded.shape[0] == len(df)\n35         assert encoded.shape[1] > len(categorical_cols)  # Should expand due to one-hot encoding\n",
+      "code": "21         assert \"race\" in df.columns\n22         assert \"gender\" in df.columns\n23 \n",
+      "col_offset": 8,
+      "end_col_offset": 37,
+      "filename": "./tests/test_core_functionality.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 22,
+      "line_range": [
+        22
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "43 \n44         assert encoded.shape[0] == len(df)\n45         assert encoded.shape[1] > len(\n",
       "col_offset": 8,
       "end_col_offset": 42,
       "filename": "./tests/test_core_functionality.py",
@@ -1319,18 +1340,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 34,
+      "line_number": 44,
       "line_range": [
-        34
+        44
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "34         assert encoded.shape[0] == len(df)\n35         assert encoded.shape[1] > len(categorical_cols)  # Should expand due to one-hot encoding\n36         \n",
+      "code": "44         assert encoded.shape[0] == len(df)\n45         assert encoded.shape[1] > len(\n46             categorical_cols\n47         )  # Should expand due to one-hot encoding\n48 \n",
       "col_offset": 8,
-      "end_col_offset": 55,
+      "end_col_offset": 9,
       "filename": "./tests/test_core_functionality.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -1339,16 +1360,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 35,
+      "line_number": 45,
       "line_range": [
-        35
+        45,
+        46,
+        47
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "49         \n50         assert scaled.shape == df[numeric_cols].shape\n51         # Check that scaled data has mean ~0 and std ~1\n",
+      "code": "68 \n69         assert scaled.shape == df[numeric_cols].shape\n70         # Check that scaled data has mean ~0 and std ~1\n",
       "col_offset": 8,
       "end_col_offset": 53,
       "filename": "./tests/test_core_functionality.py",
@@ -1359,16 +1382,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 50,
+      "line_number": 69,
       "line_range": [
-        50
+        69
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "51         # Check that scaled data has mean ~0 and std ~1\n52         assert abs(scaled.mean()) < 0.1\n53         assert abs(scaled.std() - 1) < 0.1\n",
+      "code": "70         # Check that scaled data has mean ~0 and std ~1\n71         assert abs(scaled.mean()) < 0.1\n72         assert abs(scaled.std() - 1) < 0.1\n",
       "col_offset": 8,
       "end_col_offset": 39,
       "filename": "./tests/test_core_functionality.py",
@@ -1379,16 +1402,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 52,
+      "line_number": 71,
       "line_range": [
-        52
+        71
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "52         assert abs(scaled.mean()) < 0.1\n53         assert abs(scaled.std() - 1) < 0.1\n54         \n",
+      "code": "71         assert abs(scaled.mean()) < 0.1\n72         assert abs(scaled.std() - 1) < 0.1\n73 \n",
       "col_offset": 8,
       "end_col_offset": 42,
       "filename": "./tests/test_core_functionality.py",
@@ -1399,16 +1422,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 53,
+      "line_number": 72,
       "line_range": [
-        53
+        72
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "80         \n81         assert X_processed.shape[0] == len(df)\n82         assert X_processed.shape[1] > len(numeric_features)  # Should be expanded by one-hot encoding\n",
+      "code": "118 \n119         assert X_processed.shape[0] == len(df)\n120         assert X_processed.shape[1] > len(\n",
       "col_offset": 8,
       "end_col_offset": 46,
       "filename": "./tests/test_core_functionality.py",
@@ -1419,18 +1442,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 81,
+      "line_number": 119,
       "line_range": [
-        81
+        119
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "81         assert X_processed.shape[0] == len(df)\n82         assert X_processed.shape[1] > len(numeric_features)  # Should be expanded by one-hot encoding\n83         \n",
+      "code": "119         assert X_processed.shape[0] == len(df)\n120         assert X_processed.shape[1] > len(\n121             numeric_features\n122         )  # Should be expanded by one-hot encoding\n123 \n",
       "col_offset": 8,
-      "end_col_offset": 59,
+      "end_col_offset": 9,
       "filename": "./tests/test_core_functionality.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -1439,16 +1462,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 82,
+      "line_number": 120,
       "line_range": [
-        82
+        120,
+        121,
+        122
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "92         \n93         assert len(y_encoded) == len(df)\n94         assert set(y_encoded) == {0, 1, 2}  # Should have 3 classes\n",
+      "code": "132 \n133         assert len(y_encoded) == len(df)\n134         assert set(y_encoded) == {0, 1, 2}  # Should have 3 classes\n",
       "col_offset": 8,
       "end_col_offset": 40,
       "filename": "./tests/test_core_functionality.py",
@@ -1459,16 +1484,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 93,
+      "line_number": 133,
       "line_range": [
-        93
+        133
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "93         assert len(y_encoded) == len(df)\n94         assert set(y_encoded) == {0, 1, 2}  # Should have 3 classes\n95         assert len(le.classes_) == 3\n",
+      "code": "133         assert len(y_encoded) == len(df)\n134         assert set(y_encoded) == {0, 1, 2}  # Should have 3 classes\n135         assert len(le.classes_) == 3\n",
       "col_offset": 8,
       "end_col_offset": 42,
       "filename": "./tests/test_core_functionality.py",
@@ -1479,16 +1504,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 94,
+      "line_number": 134,
       "line_range": [
-        94
+        134
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "94         assert set(y_encoded) == {0, 1, 2}  # Should have 3 classes\n95         assert len(le.classes_) == 3\n96 \n",
+      "code": "134         assert set(y_encoded) == {0, 1, 2}  # Should have 3 classes\n135         assert len(le.classes_) == 3\n136 \n",
       "col_offset": 8,
       "end_col_offset": 36,
       "filename": "./tests/test_core_functionality.py",
@@ -1499,16 +1524,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 95,
+      "line_number": 135,
       "line_range": [
-        95
+        135
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "104             import xgboost as xgb\n105             assert hasattr(xgb, 'XGBClassifier')\n106         except ImportError:\n",
+      "code": "145 \n146             assert hasattr(xgb, \"XGBClassifier\")\n147         except ImportError:\n",
       "col_offset": 12,
       "end_col_offset": 48,
       "filename": "./tests/test_core_functionality.py",
@@ -1519,96 +1544,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 105,
+      "line_number": 146,
       "line_range": [
-        105
+        146
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "136         \n137         assert len(predictions) == len(X_test)\n138         assert set(predictions).issubset({0, 1, 2})\n",
-      "col_offset": 8,
-      "end_col_offset": 46,
-      "filename": "./tests/test_core_functionality.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 137,
-      "line_range": [
-        137
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "137         assert len(predictions) == len(X_test)\n138         assert set(predictions).issubset({0, 1, 2})\n139 \n",
-      "col_offset": 8,
-      "end_col_offset": 51,
-      "filename": "./tests/test_core_functionality.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 138,
-      "line_range": [
-        138
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "148             import mlflow.xgboost\n149             assert hasattr(mlflow, 'start_run')\n150         except ImportError:\n",
-      "col_offset": 12,
-      "end_col_offset": 47,
-      "filename": "./tests/test_core_functionality.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 149,
-      "line_range": [
-        149
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "178         runs = mlflow.search_runs()\n179         assert len(runs) >= 1\n180         assert run_id in runs['run_id'].values\n",
-      "col_offset": 8,
-      "end_col_offset": 29,
-      "filename": "./tests/test_core_functionality.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 179,
-      "line_range": [
-        179
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "179         assert len(runs) >= 1\n180         assert run_id in runs['run_id'].values\n181 \n",
+      "code": "179 \n180         assert len(predictions) == len(X_test)\n181         assert set(predictions).issubset({0, 1, 2})\n",
       "col_offset": 8,
       "end_col_offset": 46,
       "filename": "./tests/test_core_functionality.py",
@@ -1628,7 +1573,27 @@
       "test_name": "assert_used"
     },
     {
-      "code": "190             from evidently.report import Report\n191             assert hasattr(evidently, 'report')\n192         except ImportError:\n",
+      "code": "180         assert len(predictions) == len(X_test)\n181         assert set(predictions).issubset({0, 1, 2})\n182 \n",
+      "col_offset": 8,
+      "end_col_offset": 51,
+      "filename": "./tests/test_core_functionality.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 181,
+      "line_range": [
+        181
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "192 \n193             assert hasattr(mlflow, \"start_run\")\n194         except ImportError:\n",
       "col_offset": 12,
       "end_col_offset": 47,
       "filename": "./tests/test_core_functionality.py",
@@ -1639,38 +1604,18 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 191,
+      "line_number": 193,
       "line_range": [
-        191
+        193
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "213         results = report.as_dict()\n214         assert 'metrics' in results\n215         \n",
+      "code": "222         runs = mlflow.search_runs()\n223         assert len(runs) >= 1\n224         assert run_id in runs[\"run_id\"].values\n",
       "col_offset": 8,
-      "end_col_offset": 35,
-      "filename": "./tests/test_core_functionality.py",
-      "issue_confidence": "HIGH",
-      "issue_cwe": {
-        "id": 703,
-        "link": "https://cwe.mitre.org/data/definitions/703.html"
-      },
-      "issue_severity": "LOW",
-      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 214,
-      "line_range": [
-        214
-      ],
-      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
-      "test_id": "B101",
-      "test_name": "assert_used"
-    },
-    {
-      "code": "222         # Basic quality checks\n223         assert len(ref_data) > 0\n224         assert len(cur_data) > 0\n",
-      "col_offset": 8,
-      "end_col_offset": 32,
+      "end_col_offset": 29,
       "filename": "./tests/test_core_functionality.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -1688,9 +1633,9 @@
       "test_name": "assert_used"
     },
     {
-      "code": "223         assert len(ref_data) > 0\n224         assert len(cur_data) > 0\n225         assert ref_data.columns.tolist() == cur_data.columns.tolist()\n",
+      "code": "223         assert len(runs) >= 1\n224         assert run_id in runs[\"run_id\"].values\n225 \n",
       "col_offset": 8,
-      "end_col_offset": 32,
+      "end_col_offset": 46,
       "filename": "./tests/test_core_functionality.py",
       "issue_confidence": "HIGH",
       "issue_cwe": {
@@ -1708,7 +1653,87 @@
       "test_name": "assert_used"
     },
     {
-      "code": "224         assert len(cur_data) > 0\n225         assert ref_data.columns.tolist() == cur_data.columns.tolist()\n226         assert not ref_data.isnull().all().any()\n",
+      "code": "235 \n236             assert hasattr(evidently, \"report\")\n237         except ImportError:\n",
+      "col_offset": 12,
+      "end_col_offset": 47,
+      "filename": "./tests/test_core_functionality.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 236,
+      "line_range": [
+        236
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "258         results = report.as_dict()\n259         assert \"metrics\" in results\n260 \n",
+      "col_offset": 8,
+      "end_col_offset": 35,
+      "filename": "./tests/test_core_functionality.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 259,
+      "line_range": [
+        259
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "267         # Basic quality checks\n268         assert len(ref_data) > 0\n269         assert len(cur_data) > 0\n",
+      "col_offset": 8,
+      "end_col_offset": 32,
+      "filename": "./tests/test_core_functionality.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 268,
+      "line_range": [
+        268
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "268         assert len(ref_data) > 0\n269         assert len(cur_data) > 0\n270         assert ref_data.columns.tolist() == cur_data.columns.tolist()\n",
+      "col_offset": 8,
+      "end_col_offset": 32,
+      "filename": "./tests/test_core_functionality.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 703,
+        "link": "https://cwe.mitre.org/data/definitions/703.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
+      "line_number": 269,
+      "line_range": [
+        269
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
+      "test_id": "B101",
+      "test_name": "assert_used"
+    },
+    {
+      "code": "269         assert len(cur_data) > 0\n270         assert ref_data.columns.tolist() == cur_data.columns.tolist()\n271         assert not ref_data.isnull().all().any()\n",
       "col_offset": 8,
       "end_col_offset": 69,
       "filename": "./tests/test_core_functionality.py",
@@ -1719,16 +1744,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 225,
+      "line_number": 270,
       "line_range": [
-        225
+        270
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "225         assert ref_data.columns.tolist() == cur_data.columns.tolist()\n226         assert not ref_data.isnull().all().any()\n227         assert not cur_data.isnull().all().any()\n",
+      "code": "270         assert ref_data.columns.tolist() == cur_data.columns.tolist()\n271         assert not ref_data.isnull().all().any()\n272         assert not cur_data.isnull().all().any()\n",
       "col_offset": 8,
       "end_col_offset": 48,
       "filename": "./tests/test_core_functionality.py",
@@ -1739,16 +1764,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 226,
+      "line_number": 271,
       "line_range": [
-        226
+        271
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "226         assert not ref_data.isnull().all().any()\n227         assert not cur_data.isnull().all().any()\n228 \n",
+      "code": "271         assert not ref_data.isnull().all().any()\n272         assert not cur_data.isnull().all().any()\n273 \n",
       "col_offset": 8,
       "end_col_offset": 48,
       "filename": "./tests/test_core_functionality.py",
@@ -1759,16 +1784,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 227,
+      "line_number": 272,
       "line_range": [
-        227
+        272
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "237         # Check main Dockerfile\n238         assert os.path.exists(\"Dockerfile\") or os.path.exists(\"dockerfile\")\n239         \n",
+      "code": "282         # Check main Dockerfile\n283         assert os.path.exists(\"Dockerfile\") or os.path.exists(\"dockerfile\")\n284 \n",
       "col_offset": 8,
       "end_col_offset": 75,
       "filename": "./tests/test_core_functionality.py",
@@ -1779,16 +1804,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 238,
+      "line_number": 283,
       "line_range": [
-        238
+        283
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "240         # Check component Dockerfiles\n241         assert os.path.exists(\"DEPLOY/Dockerfile\")\n242         assert os.path.exists(\"MONITOR/Dockerfile\")\n",
+      "code": "285         # Check component Dockerfiles\n286         assert os.path.exists(\"DEPLOY/Dockerfile\")\n287         assert os.path.exists(\"MONITOR/Dockerfile\")\n",
       "col_offset": 8,
       "end_col_offset": 50,
       "filename": "./tests/test_core_functionality.py",
@@ -1799,16 +1824,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 241,
+      "line_number": 286,
       "line_range": [
-        241
+        286
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "241         assert os.path.exists(\"DEPLOY/Dockerfile\")\n242         assert os.path.exists(\"MONITOR/Dockerfile\")\n243         \n",
+      "code": "286         assert os.path.exists(\"DEPLOY/Dockerfile\")\n287         assert os.path.exists(\"MONITOR/Dockerfile\")\n288 \n",
       "col_offset": 8,
       "end_col_offset": 51,
       "filename": "./tests/test_core_functionality.py",
@@ -1819,16 +1844,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 242,
+      "line_number": 287,
       "line_range": [
-        242
+        287
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "247         \n248         assert os.path.exists(\"requirements.txt\")\n249         assert os.path.exists(\"astro-airflow/requirements.txt\")\n",
+      "code": "292 \n293         assert os.path.exists(\"requirements.txt\")\n294         assert os.path.exists(\"astro-airflow/requirements.txt\")\n",
       "col_offset": 8,
       "end_col_offset": 49,
       "filename": "./tests/test_core_functionality.py",
@@ -1839,16 +1864,16 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 248,
+      "line_number": 293,
       "line_range": [
-        248
+        293
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
       "test_name": "assert_used"
     },
     {
-      "code": "248         assert os.path.exists(\"requirements.txt\")\n249         assert os.path.exists(\"astro-airflow/requirements.txt\")\n",
+      "code": "293         assert os.path.exists(\"requirements.txt\")\n294         assert os.path.exists(\"astro-airflow/requirements.txt\")\n",
       "col_offset": 8,
       "end_col_offset": 63,
       "filename": "./tests/test_core_functionality.py",
@@ -1859,9 +1884,9 @@
       },
       "issue_severity": "LOW",
       "issue_text": "Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.",
-      "line_number": 249,
+      "line_number": 294,
       "line_range": [
-        249
+        294
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.8.6/plugins/b101_assert_used.html",
       "test_id": "B101",
