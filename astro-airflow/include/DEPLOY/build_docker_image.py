@@ -49,26 +49,43 @@ EXPOSE {port}
 CMD ["mlflow", "models", "serve", "-m", "/app/model", "--env-manager", "local", "--host", "0.0.0.0", "--port", "{port}"]
 """
 
+
 def sh(cmd, cwd=None):
     print(f"+ {cmd}")
     res = subprocess.run(cmd, shell=True, cwd=cwd)
     if res.returncode != 0:
         sys.exit(res.returncode)
 
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tracking-uri", default=DEFAULT_MLFLOW_URI,
-                    help="MLflow tracking URI used during training (file:/.../mlruns)")
-    ap.add_argument("--experiment", default=DEFAULT_EXP_NAME,
-                    help="MLflow experiment name")
-    ap.add_argument("--out-dir", default=DEFAULT_OUT_DIR,
-                    help="Where to export the MLflow model directory (Docker build context expects ./model)")
-    ap.add_argument("--image-tag", default=DEFAULT_IMAGE_TAG,
-                    help="Docker image tag to build")
-    ap.add_argument("--serve-port", type=int, default=DEFAULT_SERVE_PORT,
-                    help="Container port for mlflow models serve (default: 5001)")
-    ap.add_argument("--no-build", action="store_true",
-                    help="Only export model & write Dockerfile; skip docker build")
+    ap.add_argument(
+        "--tracking-uri",
+        default=DEFAULT_MLFLOW_URI,
+        help="MLflow tracking URI used during training (file:/.../mlruns)",
+    )
+    ap.add_argument(
+        "--experiment", default=DEFAULT_EXP_NAME, help="MLflow experiment name"
+    )
+    ap.add_argument(
+        "--out-dir",
+        default=DEFAULT_OUT_DIR,
+        help="Where to export the MLflow model directory (Docker build context expects ./model)",
+    )
+    ap.add_argument(
+        "--image-tag", default=DEFAULT_IMAGE_TAG, help="Docker image tag to build"
+    )
+    ap.add_argument(
+        "--serve-port",
+        type=int,
+        default=DEFAULT_SERVE_PORT,
+        help="Container port for mlflow models serve (default: 5001)",
+    )
+    ap.add_argument(
+        "--no-build",
+        action="store_true",
+        help="Only export model & write Dockerfile; skip docker build",
+    )
     args = ap.parse_args()
 
     # 1) MLflow store
@@ -99,34 +116,36 @@ def main():
     # Clear existing model directory if it exists
     if os.path.exists(args.out_dir) and os.listdir(args.out_dir):
         import shutil
+
         shutil.rmtree(args.out_dir)
         print(f"Cleared existing model directory: {args.out_dir}")
-    
+
     os.makedirs(args.out_dir, exist_ok=True)
-    
+
     # Try to directly copy the model artifacts if available locally
     import urllib.parse
     from pathlib import Path
-    
+
     # Parse the tracking URI to get the local path
     parsed_uri = urllib.parse.urlparse(args.tracking_uri)
-    if parsed_uri.scheme == 'file':
+    if parsed_uri.scheme == "file":
         mlruns_path = Path(parsed_uri.path)
         # Try multiple possible artifact paths
         possible_paths = [
             mlruns_path / exp.experiment_id / run_id / "artifacts" / "model",
             mlruns_path / str(exp.experiment_id) / run_id / "artifacts" / "model",
         ]
-        
+
         artifact_path = None
         for path in possible_paths:
             if path.exists():
                 artifact_path = path
                 break
-        
+
         if artifact_path:
             print(f"Found local model artifacts at: {artifact_path}")
             import shutil
+
             shutil.copytree(artifact_path, args.out_dir, dirs_exist_ok=True)
             print(f"Copied model artifacts to: {os.path.abspath(args.out_dir)}")
         else:
@@ -136,67 +155,100 @@ def main():
                 print(f"Contents of {mlruns_path}: {list(mlruns_path.iterdir())}")
                 exp_path = mlruns_path / str(exp.experiment_id)
                 if exp_path.exists():
-                    print(f"Contents of experiment {exp.experiment_id}: {list(exp_path.iterdir())}")
+                    print(
+                        f"Contents of experiment {exp.experiment_id}: {list(exp_path.iterdir())}"
+                    )
                     run_path = exp_path / run_id
                     if run_path.exists():
                         print(f"Contents of run {run_id}: {list(run_path.iterdir())}")
                         artifacts_path = run_path / "artifacts"
                         if artifacts_path.exists():
-                            print(f"Contents of artifacts: {list(artifacts_path.iterdir())}")
-            
+                            print(
+                                f"Contents of artifacts: {list(artifacts_path.iterdir())}"
+                            )
+
             # Check if we have best_config.json to create a model from scratch
             run_path = mlruns_path / str(exp.experiment_id) / run_id
             best_config_path = run_path / "artifacts" / "best_config.json"
-            
+
             if best_config_path.exists():
                 print(f"Found best_config.json, will create model from configuration")
                 import json
+
                 with open(best_config_path) as f:
                     config = json.load(f)
                 print(f"Best config: {config}")
-                
+
                 # Create a trained XGBoost model with the best parameters
                 print("Training XGBoost model with best parameters...")
-                from sklearn.model_selection import train_test_split
-                from sklearn.datasets import make_classification
-                import xgboost as xgb
                 import pickle
-                
+
+                import xgboost as xgb
+                from sklearn.datasets import make_classification
+                from sklearn.model_selection import train_test_split
+
                 # Create synthetic training data
-                X, y = make_classification(n_samples=1000, n_features=20, n_informative=10, 
-                                         n_redundant=10, n_classes=2, random_state=42)
-                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-                
+                X, y = make_classification(
+                    n_samples=1000,
+                    n_features=20,
+                    n_informative=10,
+                    n_redundant=10,
+                    n_classes=2,
+                    random_state=42,
+                )
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X, y, test_size=0.2, random_state=42
+                )
+
                 # Train model with best parameters
-                model_params = {k: v for k, v in config.items() if k in [
-                    'max_depth', 'learning_rate', 'n_estimators', 'subsample', 
-                    'colsample_bytree', 'reg_alpha', 'reg_lambda'
-                ]}
-                model_params['random_state'] = 42
-                
+                model_params = {
+                    k: v
+                    for k, v in config.items()
+                    if k
+                    in [
+                        "max_depth",
+                        "learning_rate",
+                        "n_estimators",
+                        "subsample",
+                        "colsample_bytree",
+                        "reg_alpha",
+                        "reg_lambda",
+                    ]
+                }
+                model_params["random_state"] = 42
+
                 model = xgb.XGBClassifier(**model_params)
                 model.fit(X_train, y_train)
-                
+
                 # Save as MLflow model
                 import mlflow.xgboost as mlf_xgb
+
                 mlf_xgb.save_model(xgb_model=model, path=args.out_dir)
-                print(f"Created and saved XGBoost model to: {os.path.abspath(args.out_dir)}")
-                
+                print(
+                    f"Created and saved XGBoost model to: {os.path.abspath(args.out_dir)}"
+                )
+
             else:
                 print(f"No model artifacts or config found, trying MLflow download...")
                 # Fallback to MLflow download
                 try:
                     ml_model = mlflow.sklearn.load_model(model_uri)
                     mlflow.sklearn.save_model(sk_model=ml_model, path=args.out_dir)
-                    print(f"Downloaded and saved model to: {os.path.abspath(args.out_dir)}")
+                    print(
+                        f"Downloaded and saved model to: {os.path.abspath(args.out_dir)}"
+                    )
                 except Exception as e:
                     print(f"MLflow download failed: {e}")
                     print("Creating a minimal model placeholder...")
                     # Create a basic directory structure for testing
                     with open(os.path.join(args.out_dir, "MLmodel"), "w") as f:
-                        f.write("artifact_path: model\nflavors:\n  sklearn:\n    pickled_model: model.pkl\n")
+                        f.write(
+                            "artifact_path: model\nflavors:\n  sklearn:\n    pickled_model: model.pkl\n"
+                        )
                     with open(os.path.join(args.out_dir, "requirements.txt"), "w") as f:
-                        f.write("mlflow>=2.17.0\nscikit-learn\nxgboost\npandas\nnumpy\n")
+                        f.write(
+                            "mlflow>=2.17.0\nscikit-learn\nxgboost\npandas\nnumpy\n"
+                        )
     else:
         # Remote MLflow server - use standard download
         ml_model = mlflow.sklearn.load_model(model_uri)
@@ -214,11 +266,16 @@ def main():
         sh(f"docker build -t {args.image_tag} .")
         print(f"\nBuilt image: {args.image_tag}")
         print("Run it with:")
-        print(f"  docker run --rm -p {args.serve_port}:{args.serve_port} {args.image_tag}")
+        print(
+            f"  docker run --rm -p {args.serve_port}:{args.serve_port} {args.image_tag}"
+        )
         print("\nPOST predictions to:")
         print(f"  curl -X POST http://localhost:{args.serve_port}/invocations \\")
         print('       -H "Content-Type: application/json" \\')
-        print('       -d \'{"dataframe_records": [{"feature1": 1.2, "feature2": "A"}]}\' ')
+        print(
+            '       -d \'{"dataframe_records": [{"feature1": 1.2, "feature2": "A"}]}\' '
+        )
+
 
 if __name__ == "__main__":
     main()

@@ -16,31 +16,34 @@ Usage:
                                --num-samples 50 --gpus-per-trial 0 --cpus-per-trial 4
 """
 
-import os
-import json
 import argparse
+import json
+import os
 from pathlib import Path
-import numpy as np
-import pandas as pd
-
-from sklearn.model_selection import train_test_split, StratifiedKFold
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import roc_auc_score, accuracy_score, f1_score, average_precision_score
-
-from xgboost import XGBClassifier
-
-# Ray / Tune
-import ray
-from ray import tune
-from ray.tune import RunConfig
-from ray.tune.schedulers import ASHAScheduler
-from ray.air import session
 
 # MLflow
 import mlflow
 import mlflow.sklearn
+import numpy as np
+import pandas as pd
+
+# Ray / Tune
+import ray
+from ray import tune
+from ray.air import session
+from ray.tune import RunConfig
+from ray.tune.schedulers import ASHAScheduler
+from sklearn.compose import ColumnTransformer
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    f1_score,
+    roc_auc_score,
+)
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from xgboost import XGBClassifier
 
 
 def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
@@ -49,7 +52,13 @@ def build_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
     return ColumnTransformer(
         transformers=[
             ("num", StandardScaler(), numeric_cols),
-            ("cat", OneHotEncoder(drop="first", handle_unknown="ignore", sparse_output=False), categorical_cols),
+            (
+                "cat",
+                OneHotEncoder(
+                    drop="first", handle_unknown="ignore", sparse_output=False
+                ),
+                categorical_cols,
+            ),
         ],
         remainder="drop",
     )
@@ -61,11 +70,13 @@ def compute_scale_pos_weight(y_binary: np.ndarray) -> float:
     return float(neg / max(pos, 1))
 
 
-def trainable(config,
-              X_train: pd.DataFrame,
-              y_train_num: np.ndarray,
-              preprocessor: ColumnTransformer,
-              mlruns_uri: str):
+def trainable(
+    config,
+    X_train: pd.DataFrame,
+    y_train_num: np.ndarray,
+    preprocessor: ColumnTransformer,
+    mlruns_uri: str,
+):
     """One Ray Tune trial: 5-fold CV -> report mean metrics."""
     mlflow.set_tracking_uri(mlruns_uri)
     mlflow.set_experiment("xgb_diabetic_readmission_hpo")
@@ -118,7 +129,9 @@ def trainable(config,
         session.report(metrics=metrics)
 
 
-def fit_best_and_log(X_train, y_train_num, X_test, y_test_num, preprocessor, best_config, mlruns_uri: str):
+def fit_best_and_log(
+    X_train, y_train_num, X_test, y_test_num, preprocessor, best_config, mlruns_uri: str
+):
     """Fit best pipeline on full TRAIN, eval on TEST, log to MLflow."""
     mlflow.set_tracking_uri(mlruns_uri)
     mlflow.set_experiment("xgb_diabetic_readmission_hpo")
@@ -158,7 +171,9 @@ def fit_best_and_log(X_train, y_train_num, X_test, y_test_num, preprocessor, bes
         }
         mlflow.log_metrics({k: float(v) for k, v in test_metrics.items()})
 
-        mlflow.sklearn.log_model(sk_model=pipe, artifact_path="model", registered_model_name=None)
+        mlflow.sklearn.log_model(
+            sk_model=pipe, artifact_path="model", registered_model_name=None
+        )
 
         cfg_path = "best_config.json"
         with open(cfg_path, "w") as f:
@@ -170,20 +185,29 @@ def fit_best_and_log(X_train, y_train_num, X_test, y_test_num, preprocessor, bes
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=str, required=True, help="Path to diabetic_data.csv")
+    parser.add_argument(
+        "--data", type=str, required=True, help="Path to diabetic_data.csv"
+    )
     parser.add_argument("--test-size", type=float, default=0.2)
-    parser.add_argument("--num-samples", type=int, default=30, help="Number of Ray Tune trials")
+    parser.add_argument(
+        "--num-samples", type=int, default=30, help="Number of Ray Tune trials"
+    )
     parser.add_argument("--cpus-per-trial", type=int, default=2)
     parser.add_argument("--gpus-per-trial", type=float, default=0.0)
-    parser.add_argument("--ray-dir", type=str, default="ray_exp", help="Directory for Ray Tune outputs")
-    
+    parser.add_argument(
+        "--ray-dir", type=str, default="ray_exp", help="Directory for Ray Tune outputs"
+    )
+
     # Compute default mlruns directory relative to this script
     THIS_DIR = Path(__file__).resolve().parent
     DEFAULT_MLRUNS = str(THIS_DIR / "mlruns")
-    
-    parser.add_argument("--mlruns-dir", type=str,
-                        default=DEFAULT_MLRUNS,
-                        help="Path for MLflow backend store (default: ./mlruns relative to script)")
+
+    parser.add_argument(
+        "--mlruns-dir",
+        type=str,
+        default=DEFAULT_MLRUNS,
+        help="Path for MLflow backend store (default: ./mlruns relative to script)",
+    )
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -232,6 +256,7 @@ def main():
 
     try:
         from ray.tune.search.optuna import OptunaSearch
+
         search_alg = OptunaSearch(metric="val_auc", mode="max")
     except Exception:
         search_alg = None
@@ -284,7 +309,9 @@ def main():
 
     print(f"\nRay results saved under: {os.path.abspath(args.ray_dir)}")
     print(f"MLflow runs saved under: {mlruns_abs}")
-    print(f"Launch UI: mlflow ui --backend-store-uri file:{mlruns_abs} --host 127.0.0.1 --port 5000")
+    print(
+        f"Launch UI: mlflow ui --backend-store-uri file:{mlruns_abs} --host 127.0.0.1 --port 5000"
+    )
     ray.shutdown()
 
 

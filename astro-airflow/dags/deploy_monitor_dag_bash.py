@@ -8,6 +8,7 @@ Both tasks use BashOperator to execute Python scripts with proper virtual enviro
 """
 
 from datetime import datetime, timedelta
+
 from airflow import DAG
 from airflow.providers.standard.operators.bash import BashOperator
 
@@ -65,18 +66,18 @@ for i, row in runs.iterrows():
         bash_command=f"""
         cd /tmp && \
         echo "Preparing Docker build context for host execution..." && \
-        
-        # Copy build artifacts to a location accessible by host  
+
+        # Copy build artifacts to a location accessible by host
         BUILD_DIR="/tmp/docker_build_$(date +%s)" && \
         mkdir -p "$BUILD_DIR" && \
-        
+
         if [ -f "Dockerfile" ] && [ -d "model" ]; then
             echo "Copying Dockerfile and model to host-accessible location..." && \
             cp Dockerfile "$BUILD_DIR/" && \
             cp -r model "$BUILD_DIR/" && \
             echo "Files copied to: $BUILD_DIR" && \
             ls -la "$BUILD_DIR" && \
-            
+
             # Create a trigger file for manual Docker execution
             echo "BUILD_DIR=$BUILD_DIR" > "/tmp/docker_build_trigger.txt" && \
             echo "TIMESTAMP=$(date)" >> "/tmp/docker_build_trigger.txt" && \
@@ -95,7 +96,7 @@ for i, row in runs.iterrows():
             exit 1
         fi
         """,
-    )    # Set task dependencies
+    )  # Set task dependencies
     deploy_task >> run_container_task
 
 # --- DAG 2: Monitor and retrain (daily) ---
@@ -117,12 +118,12 @@ with DAG(
         cp -r /usr/local/airflow/include/DEPLOY . && \
         cp -r /usr/local/airflow/include/mlruns . && \
         echo "🔍 Starting model performance monitoring..." && \
-        
+
         # Check if monitoring data exists
         if [ -f "MONITOR/monitoring/tmp/ref.csv" ] && [ -f "MONITOR/monitoring/tmp/cur.csv" ]; then
             echo "📊 Found monitoring data files" && \
             ls -la MONITOR/monitoring/tmp/ && \
-            
+
             # Run enhanced monitoring script with consistent preprocessing
             echo "🔄 Running enhanced model performance monitoring..." && \
             python MONITOR/enhanced_monitor.py \
@@ -152,19 +153,19 @@ with DAG(
         cp -r /usr/local/airflow/include/RAY . && \
         cp -r /usr/local/airflow/include/mlruns . && \
         echo "🔄 Checking if retraining is needed..." && \
-        
+
         # Check if drift was detected (simplified check for containerized environment)
         # In a real scenario, this would be based on monitoring results
         RETRAIN_NEEDED=false
-        
+
         if [ "$RETRAIN_NEEDED" = "true" ]; then
             echo "🚀 Retraining triggered due to performance drift" && \
-            
+
             # Run retraining with Ray Tune
             python RAY/ray_tune_xgboost.py \
                 --tracking-uri file:/tmp/mlruns \
                 --experiment-name xgb_diabetic_readmission_hpo_retrain && \
-            
+
             echo "✅ Retraining completed" && \
             echo "🔧 Model artifacts updated in MLflow"
         else
@@ -174,32 +175,32 @@ with DAG(
     )
 
     redeploy_task = BashOperator(
-        task_id="redeploy_if_retrained", 
+        task_id="redeploy_if_retrained",
         bash_command="""
         cd /tmp && \
         cp -r /usr/local/airflow/include/DEPLOY . && \
         cp -r /usr/local/airflow/include/mlruns . && \
         echo "🚀 Checking if redeployment is needed..." && \
-        
+
         # Check if new model was trained (simplified for demo)
         NEW_MODEL_AVAILABLE=false
-        
+
         if [ "$NEW_MODEL_AVAILABLE" = "true" ]; then
             echo "📦 New model available, preparing redeployment..." && \
-            
+
             # Build new model artifacts
             python DEPLOY/build_docker_image.py \
                 --out-dir /tmp/new_model \
                 --tracking-uri file:/tmp/mlruns \
                 --experiment xgb_diabetic_readmission_hpo_retrain \
                 --no-build && \
-            
+
             # Prepare deployment artifacts
             BUILD_DIR="/tmp/retrain_build_$(date +%s)" && \
             mkdir -p "$BUILD_DIR" && \
             cp Dockerfile "$BUILD_DIR/" && \
             cp -r new_model "$BUILD_DIR/model" && \
-            
+
             echo "✅ New model deployment artifacts ready at: $BUILD_DIR" && \
             echo "🔄 Manual deployment required - check build directory for new model"
         else
