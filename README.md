@@ -15,7 +15,8 @@ patient_selection/
 │   ├── RAY/               # Hyperparameter Optimization (Ray Tune + MLflow)
 │   ├── DEPLOY/            # Model Deployment (Docker + REST API)
 │   ├── MONITOR/           # Drift Detection & Auto-Retraining
-│   ├── airflow/           # Pipeline Orchestration
+│   ├── airflow/           # Pipeline Orchestration (Standard Docker Compose)
+│   ├── astro-airflow/     # Pipeline Orchestration (Astronomer/Astro CLI)
 │   └── requirements.txt   # Python dependencies
 └── data/
     └── diabetic_data.csv  # Dataset from Kaggle
@@ -45,6 +46,8 @@ patient_selection/
 3. DEPLOY (Production)   → Package as Docker container with REST API
 4. MONITOR (Observability) → Detect drift, trigger retraining
 5. AIRFLOW (Orchestration) → Automate deployment + monitoring workflows
+   - Option A: Standard Airflow (docker-compose)
+   - Option B: Astro Airflow (Astronomer CLI) - Recommended
 ```
 
 **Continuous Feedback Loop**:
@@ -615,9 +618,13 @@ python MONITOR/monitor_and_retrain.py \
 
 ### 5. AIRFLOW - Pipeline Orchestration
 
-**Location**: `code/airflow/` | **Documentation**: [airflow/README.md](airflow/README.md)
+**Location**: `code/airflow/` and `code/astro-airflow/` | **Documentation**: [airflow/README.md](airflow/README.md), [astro-airflow/README.md](astro-airflow/README.md)
 
 **Purpose**: Automate and orchestrate the entire ML pipeline with scheduled execution, dependency management, and monitoring.
+
+#### Option A: Standard Airflow (Docker Compose)
+
+**Location**: `code/airflow/`
 
 **Components**:
 - **DAG 1 - Deploy on Start** (`@once`): Initial model deployment
@@ -638,16 +645,107 @@ AIRFLOW_PROJ_DIR=$(pwd) docker-compose --env-file airflow/.env -f airflow/docker
 # http://localhost:8080 (default: airflow/airflow)
 ```
 
-**Advantages**:
-- ✅ Automated scheduling (no manual cron)
-- ✅ Dependency management
-- ✅ Failure handling with retries
-- ✅ Centralized logging
-- ✅ Web UI for monitoring
+**Tools**: apache-airflow 3.0.1, postgresql, docker-compose
+
+#### Option B: Astronomer (Astro CLI) - **Recommended**
+
+**Location**: `code/astro-airflow/`
+
+**Purpose**: Production-grade Airflow deployment using Astronomer's Astro Runtime with simplified local development and cloud deployment options.
+
+**Components**:
+- **DAGs**: Located in `dags/` directory
+  - `deploy_monitor_dag_bash.py`: Two DAGs for deployment and monitoring using BashOperator
+    - `deploy_on_start_bash`: Manual trigger for initial deployment
+    - `monitor_and_retrain_bash`: Daily monitoring at 2 AM
+  - `exampledag.py`: Example DAG showing Airflow capabilities
+- **Include**: All project components (DEPLOY, MONITOR, RAY) copied into `include/` for containerized access
+- **Dockerfile**: Astro Runtime base image with custom dependencies
+- **requirements.txt**: ML/DS dependencies (mlflow, scikit-learn, xgboost, ray[tune], evidently)
+
+**Key Features**:
+- 🚀 **Astro Runtime**: Pre-configured Airflow with optimized performance
+- 📦 **Simplified Deployment**: Single command to start/stop (`astro dev start/stop`)
+- 🔄 **Auto-reload**: DAG changes reflected automatically
+- 🧪 **Testing Support**: Built-in pytest support for DAG validation
+- ☁️ **Cloud Ready**: Easy deployment to Astronomer Cloud platform
+- 🐳 **Container Isolation**: Each component runs in isolated container environment
+
+**Setup**:
+```bash
+# Install Astro CLI (one-time)
+curl -sSL install.astronomer.io | sudo bash -s
+
+# Navigate to astro-airflow directory
+cd code/astro-airflow
+
+# Start Airflow (spins up 5 containers)
+astro dev start
+
+# Access UI
+# http://localhost:8080 (default: admin/admin)
+
+# Stop Airflow
+astro dev stop
+
+# View logs
+astro dev logs
+
+# Run pytest
+astro dev pytest
+```
+
+**DAG Details**:
+
+**1. Deploy DAG** (`deploy_on_start_bash`):
+- **Schedule**: Manual trigger only
+- **Tasks**:
+  - `deploy_best_model`: Exports best model from MLflow, generates Dockerfile
+  - `run_docker_container`: Prepares Docker build context for host execution
+- **Workflow**: Queries MLflow → Exports model → Creates deployment artifacts
+
+**2. Monitor DAG** (`monitor_and_retrain_bash`):
+- **Schedule**: Daily at 2 AM UTC
+- **Tasks**:
+  - `monitor_performance`: Runs enhanced monitoring script to detect drift
+  - `redeploy_if_retrained`: Rebuilds and redeploys model if retraining occurred
+- **Workflow**: Load data → Score predictions → Compute drift → Trigger retrain (if needed) → Redeploy
+
+**Advantages Over Standard Airflow**:
+- ✅ Faster setup (no manual environment configuration)
+- ✅ Better dependency management (Astro Runtime)
+- ✅ Built-in testing framework
+- ✅ Production-grade defaults
+- ✅ Easier cloud deployment path
+- ✅ Active community and commercial support
+
+**Architecture**:
+```
+Astro Airflow Container
+├── dags/ (DAG definitions)
+├── include/ (project code: DEPLOY, MONITOR, RAY)
+├── plugins/ (custom operators)
+├── tests/ (DAG tests)
+└── Astro Runtime (Python 3.11 + Airflow 3.1 + ML libs)
+```
 
 **Resource Requirements**: Min 4GB RAM, 2 CPUs | Recommended 8GB RAM, 4+ CPUs
 
-**Tools**: apache-airflow 3.0.1, postgresql, docker-compose
+**Tools**: astro-cli, apache-airflow 3.1+, postgresql, mlflow, xgboost, ray[tune]
+
+---
+
+**Comparison**:
+
+| Feature | Standard Airflow | Astro Airflow |
+|---------|-----------------|---------------|
+| Setup Time | 10-15 min | 2-3 min |
+| Configuration | Manual .env | Auto-generated |
+| Testing | Manual | Built-in pytest |
+| Cloud Deployment | Manual | One command |
+| Updates | Manual | Managed by Astro |
+| Support | Community | Commercial + Community |
+| **Recommendation** | Learning/Basic | Production/Scale |
 
 ---
 
@@ -681,11 +779,15 @@ python monitor_and_retrain.py \
   --current ../../data/diabetic_data_drift.csv \
   --endpoint http://localhost:5001/invocations
 
-# 5. Orchestrate with Airflow
+# 5. Orchestrate with Airflow (Option A: Standard)
 cd ../airflow/
 bash set_airflow_env.sh
 cd ..
 AIRFLOW_PROJ_DIR=$(pwd) docker-compose --env-file airflow/.env -f airflow/docker-compose.yaml up -d
+
+# OR 5. Orchestrate with Astro Airflow (Option B: Recommended)
+cd ../astro-airflow/
+astro dev start
 ```
 
 ### MLflow UI
