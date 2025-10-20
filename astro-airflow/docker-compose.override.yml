@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  api-server:
+    volumes:
+      - ../RAY:/usr/local/airflow/include/RAY
+  
+  scheduler:
+    volumes:
+      - ../RAY:/usr/local/airflow/include/RAY
+  
+  dag-processor:
+    volumes:
+      - ../RAY:/usr/local/airflow/include/RAY
+  
+  triggerer:
+    volumes:
+      - ../RAY:/usr/local/airflow/include/RAY
