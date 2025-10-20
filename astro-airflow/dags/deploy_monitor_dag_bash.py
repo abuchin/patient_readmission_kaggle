@@ -195,7 +195,6 @@ print('Sample monitoring data created')
         """,
     )
 
-
     redeploy_task = BashOperator(
         task_id="redeploy_if_retrained",
         bash_command=f"""
