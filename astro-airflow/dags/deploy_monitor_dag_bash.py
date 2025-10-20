@@ -146,33 +146,6 @@ with DAG(
         """,
     )
 
-    retrain_task = BashOperator(
-        task_id="retrain_if_needed",
-        bash_command="""
-        cd /tmp && \
-        cp -r /usr/local/airflow/include/RAY . && \
-        cp -r /usr/local/airflow/include/mlruns . && \
-        echo "🔄 Checking if retraining is needed..." && \
-
-        # Check if drift was detected (simplified check for containerized environment)
-        # In a real scenario, this would be based on monitoring results
-        RETRAIN_NEEDED=false
-
-        if [ "$RETRAIN_NEEDED" = "true" ]; then
-            echo "🚀 Retraining triggered due to performance drift" && \
-
-            # Run retraining with Ray Tune
-            python RAY/ray_tune_xgboost.py \
-                --tracking-uri file:/tmp/mlruns \
-                --experiment-name xgb_diabetic_readmission_hpo_retrain && \
-
-            echo "✅ Retraining completed" && \
-            echo "🔧 Model artifacts updated in MLflow"
-        else
-            echo "✅ No retraining needed - model performance is acceptable"
-        fi
-        """,
-    )
 
     redeploy_task = BashOperator(
         task_id="redeploy_if_retrained",
@@ -180,14 +153,6 @@ with DAG(
         cd /tmp && \
         cp -r /usr/local/airflow/include/DEPLOY . && \
         cp -r /usr/local/airflow/include/mlruns . && \
-        echo "🚀 Checking if redeployment is needed..." && \
-
-        # Check if new model was trained (simplified for demo)
-        NEW_MODEL_AVAILABLE=false
-
-        if [ "$NEW_MODEL_AVAILABLE" = "true" ]; then
-            echo "📦 New model available, preparing redeployment..." && \
-
             # Build new model artifacts
             python DEPLOY/build_docker_image.py \
                 --out-dir /tmp/new_model \
@@ -200,14 +165,13 @@ with DAG(
             mkdir -p "$BUILD_DIR" && \
             cp Dockerfile "$BUILD_DIR/" && \
             cp -r new_model "$BUILD_DIR/model" && \
-
-            echo "✅ New model deployment artifacts ready at: $BUILD_DIR" && \
-            echo "🔄 Manual deployment required - check build directory for new model"
-        else
-            echo "✅ No redeployment needed - using current model"
-        fi
+            echo "✅ Redeployment build context prepared at: $BUILD_DIR" && \
+            echo "📦 To build and run updated container manually:" && \
+            echo "   cd $BUILD_DIR" && \
+            echo "   docker build -t my_model:latest ." && \
+            echo "   docker run -p 5000:5000 my_model:latest" && \
         """,
     )
 
     # Set task dependencies - monitor first, then retrain if needed, then redeploy if retrained
-    monitor_task >> retrain_task >> redeploy_task
+    monitor_task >> redeploy_task
