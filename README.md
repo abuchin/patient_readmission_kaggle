@@ -6,6 +6,10 @@ Machine learning pipeline for predicting hospital readmissions using diabetic pa
 
 **Detailed description**: https://docs.google.com/document/d/1WmBA18F_3HDC5_bm-lsKuL9ZWlZT92M2uA5EJ-tV2s4/edit?usp=sharing
 
+**Video Demo 1**: https://drive.google.com/file/d/1NmDOePNSwbLj8B2QNLKU1G1NmEklJWdt/view?usp=sharing
+**Video Demo 2**: https://drive.google.com/file/d/1e9mrQmBkzKVl6kox-kSirUyvGEc0rkfH/view?usp=sharing
+**Video Contribution **: https://drive.google.com/file/d/1nC9g6wBTWxC1BGfzT053rwuFlDcJqR38/view?usp=sharing
+
 ## Project Structure
 
 ```
